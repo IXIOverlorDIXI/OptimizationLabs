@@ -1,0 +1,93 @@
+﻿@page "/Items"
+
+@using OptimizationLabs.Shared.Entities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<NavBar/>
+<MudTabs Elevation="2" Rounded="true" PanelClass="pa-6" Centered="true">
+    <MudTabPanel Text="Items">
+        <MudPaper Class="d-flex justify-space-around flex-grow-1 gap-4" Elevation="0">
+            <MudPaper Class="">
+            </MudPaper>
+            <MudPaper Class="">
+                <MudButton Variant="Variant.Outlined" @onclick="itemCreate">Create new item</MudButton>
+            </MudPaper>
+        </MudPaper>
+        <MudTable Items="@_allItems" Dense="@false" Hover="@true" Bordered="@true" Striped="@false">
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel InitialDirection="SortDirection.Ascending"
+                                       SortBy="new Func<Item, object>(x => x.Id)">
+                        Id
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Item, object>(x => x.ItemPrice)">ItemPrice</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Item, object>(x => x.ItemVolume)">ItemVolume</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Item, object>(x => x.ItemWeight)">ItemWeight</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    Actions
+                </MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="ItemPrice">@context.ItemPrice</MudTd>
+                <MudTd DataLabel="ItemVolume">@context.ItemVolume</MudTd>
+                <MudTd DataLabel="ItemWeight">@context.ItemWeight</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Error" @onclick="() => editItem(context.Id)">Edit</MudButton>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => deleteItem(context.Id)">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+    private List<Item> _allItems;
+
+    private void itemCreate()
+    {
+        NavManager.NavigateTo($"/ItemFormPage/{true}");
+    }
+
+    private async Task editItem(Guid id)
+    {
+        NavManager.NavigateTo($"/ItemFormPage/{false}/{id}");
+    }
+
+    private async Task deleteItem(Guid id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var confirmationResult = await (await DialogService.ShowAsync<DeleteDialog>("Delete confirmation", options)).Result;
+        if (!confirmationResult.Cancelled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
+        {
+            var response = await Client.DeleteAsync($"api/Item/{id}");
+
+            response = await Client.GetAsync("api/Item");
+
+            _allItems = await response.Content.ReadFromJsonAsync<List<Item>>();
+
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Client.GetAsync("api/Item");
+
+        _allItems = await response.Content.ReadFromJsonAsync<List<Item>>();
+    }
+
+}

@@ -1,0 +1,168 @@
+﻿@page "/DeliveryFormPage/{CreatingForm:bool}"
+@page "/DeliveryFormPage/{CreatingForm:bool}/{Id}"
+@using OptimizationLabs.Shared.Entities
+@using UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column flex-grow-1 gap-4" Elevation="0">
+    <MudPaper Class="d-flex justify-center flex-grow-1 gap-4">
+        <MudText Typo="Typo.h6">
+            @if (!CreatingForm)
+            {
+                <p>Edit delivery</p>
+            }
+            else
+            {
+                <p>Create new delivery</p>
+            }
+        </MudText>
+    </MudPaper>
+    <MudGrid>
+        <MudItem xs="12" sm="7" Class="mx-auto pa-6">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Label="ItemId" HelperText="ItemId" Class="mt-3"
+                                   @bind-Value="_delivery.ItemId" For="@(() => _delivery.ItemId)"/>
+                    <MudTextField Label="CarId" HelperText="CarId" Class="mt-3"
+                                  @bind-Value="_delivery.CarId" For="@(() => _delivery.CarId)"/>
+                </MudCardContent>
+                <MudCardActions>
+                    @if (_deliveryErrorAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.DeliveryError))">
+                            Delivery form error
+                        </MudAlert>
+                    }
+                    @if (_deliverySuccessAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Success"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.DeliverySuccess))">
+                            Delivery form success
+                        </MudAlert>
+                    }
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               Class="ml-auto" 
+                               @onclick="deliveryFormSubmit">
+                        @if (!CreatingForm)
+                        {
+                            <p>Save changes</p>
+                        }
+                        else
+                        {
+                            <p>Create</p>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public bool CreatingForm { get; set; }
+
+    private Delivery _delivery = new Delivery();
+
+    private bool _deliveryErrorAlertVisible = false;
+    private bool _deliverySuccessAlertVisible = false;
+
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.DeliveryError:
+                _deliveryErrorAlertVisible = false;
+                break;
+            case AlertDirection.DeliverySuccess:
+                _deliverySuccessAlertVisible = false;
+                break;
+        }
+    }
+
+    private async Task deliveryFormSubmit()
+    {
+        var delivery = new Delivery()
+        {
+            Id = _delivery.Id,
+            CarId = _delivery.CarId,
+            ItemId = _delivery.ItemId
+        };
+
+        HttpResponseMessage response = default;
+        
+        if (CreatingForm)
+        {
+            delivery.Id = Guid.NewGuid(); 
+            response = await Client.PostAsJsonAsync("api/Delivery", delivery);
+        }
+        else
+        {
+            response = await Client.PutAsJsonAsync($"api/Delivery/{delivery.Id}", delivery);
+        }
+
+
+        if (response.IsSuccessStatusCode)
+        {
+            _deliverySuccessAlertVisible = true;
+            _deliveryErrorAlertVisible = false;
+            //NavManager.NavigateTo("/Deliveries");
+        }
+        else
+        {
+            _deliverySuccessAlertVisible = false;
+            _deliveryErrorAlertVisible = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CreatingForm)
+        {
+            var delivery = (await (await Client.GetAsync($"api/Delivery/{Id}"))
+                .Content.ReadFromJsonAsync<Delivery>());
+
+            if (delivery == null)
+            {
+                CreatingForm = true;
+                _delivery = new Delivery();
+            }
+            else
+            {
+                try
+                {
+                    _delivery = new Delivery()
+                    {
+                        Id = delivery.Id,
+                        CarId = delivery.CarId,
+                        ItemId = delivery.ItemId
+                    };
+                    CreatingForm = false;
+                }
+                catch (Exception e)
+                {
+                    CreatingForm = true;
+                    _delivery = new Delivery();
+                }
+            }
+        }
+        else
+        {
+            _delivery = new Delivery();
+        }
+    }
+}

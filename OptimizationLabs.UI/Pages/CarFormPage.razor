@@ -1,0 +1,173 @@
+﻿@page "/CarFormPage/{CreatingForm:bool}"
+@page "/CarFormPage/{CreatingForm:bool}/{Id}"
+@using OptimizationLabs.Shared.Entities
+@using UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column flex-grow-1 gap-4" Elevation="0">
+    <MudPaper Class="d-flex justify-center flex-grow-1 gap-4">
+        <MudText Typo="Typo.h6">
+            @if (!CreatingForm)
+            {
+                <p>Edit car</p>
+            }
+            else
+            {
+                <p>Create new car</p>
+            }
+        </MudText>
+    </MudPaper>
+    <MudGrid>
+        <MudItem xs="12" sm="7" Class="mx-auto pa-6">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Label="DeliveryCost" HelperText="DeliveryCost" Class="mt-3"
+                                  @bind-Value="_car.DeliveryCost" For="@(() => _car.DeliveryCost)"/>
+                    <MudTextField Label="CarWeightLimit" HelperText="CarWeightLimit" Class="mt-3"
+                                  @bind-Value="_car.CarWeightLimit" For="@(() => _car.CarWeightLimit)"/>
+                    <MudTextField Label="CarVolumeLimit" HelperText="CarVolumeLimit" Class="mt-3"
+                                  @bind-Value="_car.CarVolumeLimit" For="@(() => _car.CarVolumeLimit)"/>
+                </MudCardContent>
+                <MudCardActions>
+                    @if (_carErrorAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.CarError))">
+                            Car form error
+                        </MudAlert>
+                    }
+                    @if (_carSuccessAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Success"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.CarSuccess))">
+                            Car form success
+                        </MudAlert>
+                    }
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Class="ml-auto"
+                               @onclick="carFormSubmit">
+                        @if (!CreatingForm)
+                        {
+                            <p>Save changes</p>
+                        }
+                        else
+                        {
+                            <p>Create</p>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public bool CreatingForm { get; set; }
+
+    private Car _car = new Car();
+
+    private bool _carErrorAlertVisible = false;
+    private bool _carSuccessAlertVisible = false;
+
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.CarError:
+                _carErrorAlertVisible = false;
+                break;
+            case AlertDirection.CarSuccess:
+                _carSuccessAlertVisible = false;
+                break;
+        }
+    }
+
+    private async Task carFormSubmit()
+    {
+        var car = new Car()
+        {
+            Id = _car.Id,
+            CarVolumeLimit = _car.CarVolumeLimit,
+            CarWeightLimit = _car.CarWeightLimit,
+            DeliveryCost = _car.DeliveryCost
+        };
+
+        HttpResponseMessage response = default;
+
+        if (CreatingForm)
+        {
+            car.Id = Guid.NewGuid();
+            response = await Client.PostAsJsonAsync("api/Car", car);
+        }
+        else
+        {
+            response = await Client.PutAsJsonAsync($"api/Car/{car.Id}", car);
+        }
+
+
+        if (response.IsSuccessStatusCode)
+        {
+            _carSuccessAlertVisible = true;
+            _carErrorAlertVisible = false;
+            //NavManager.NavigateTo("/Cars");
+        }
+        else
+        {
+            _carSuccessAlertVisible = false;
+            _carErrorAlertVisible = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CreatingForm)
+        {
+            var car = await (await Client.GetAsync($"api/Car/{Id}"))
+                    .Content.ReadFromJsonAsync<Car>();
+
+            if (car == null)
+            {
+                CreatingForm = true;
+                _car = new Car();
+            }
+            else
+            {
+                try
+                {
+                    _car = new Car()
+                    {
+                        Id = car.Id,
+                        CarVolumeLimit = car.CarVolumeLimit,
+                        CarWeightLimit = car.CarWeightLimit,
+                        DeliveryCost = car.DeliveryCost
+                    };
+                    CreatingForm = false;
+                }
+                catch (Exception e)
+                {
+                    CreatingForm = true;
+                    _car = new Car();
+                }
+            }
+        }
+        else
+        {
+            _car = new Car();
+        }
+    }
+
+}

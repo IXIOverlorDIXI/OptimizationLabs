@@ -1,0 +1,92 @@
+﻿@page "/Cars"
+@using OptimizationLabs.Shared.Entities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<NavBar/>
+<MudTabs Elevation="2" Rounded="true" PanelClass="pa-6" Centered="true">
+    <MudTabPanel Text="Cars">
+        <MudPaper Class="d-flex justify-space-around flex-grow-1 gap-4" Elevation="0">
+            <MudPaper Class="">
+            </MudPaper>
+            <MudPaper Class="">
+                <MudButton Variant="Variant.Outlined" @onclick="carCreate">Create new car</MudButton>
+            </MudPaper>
+        </MudPaper>
+        <MudTable Items="@_allCars" Dense="@false" Hover="@true" Bordered="@true" Striped="@false">
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel InitialDirection="SortDirection.Ascending"
+                                       SortBy="new Func<Car, object>(x => x.Id)">
+                        Id
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Car, object>(x => x.CarVolumeLimit)">CarVolumeLimit</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Car, object>(x => x.CarWeightLimit)">CarWeightLimit</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Car, object>(x => x.DeliveryCost)">DeliveryCost</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    Actions
+                </MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="CarVolumeLimit">@context.CarVolumeLimit</MudTd>
+                <MudTd DataLabel="CarWeightLimit">@context.CarWeightLimit</MudTd>
+                <MudTd DataLabel="DeliveryCost">@context.DeliveryCost</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Error" @onclick="() => editCar(context.Id)">Edit</MudButton>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => deleteCar(context.Id)">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+    private List<Car> _allCars;
+
+    private void carCreate()
+    {
+        NavManager.NavigateTo($"/CarFormPage/{true}");
+    }
+
+    private async Task editCar(Guid id)
+    {
+        NavManager.NavigateTo($"/CarFormPage/{false}/{id}");
+    }
+
+    private async Task deleteCar(Guid id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var confirmationResult = await (await DialogService.ShowAsync<DeleteDialog>("Delete confirmation", options)).Result;
+        if (!confirmationResult.Cancelled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
+        {
+            var response = await Client.DeleteAsync($"api/Car/{id}");
+
+            response = await Client.GetAsync("api/Car");
+
+            _allCars = await response.Content.ReadFromJsonAsync<List<Car>>();
+
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Client.GetAsync("api/Car");
+
+        _allCars = await response.Content.ReadFromJsonAsync<List<Car>>();
+    }
+
+}
