@@ -1,0 +1,40 @@
+﻿@inject NavigationManager NavManager
+
+<MudPaper Class="d-flex flex-row-reverse flex-grow-1 gap-4 ma-8" Elevation="0">
+    <MudPaper Class="">
+        <MudButton Variant="Variant.Outlined" @onclick="Cars">Cars</MudButton>
+    </MudPaper>
+    <MudPaper Class="">
+        <MudButton Variant="Variant.Outlined" @onclick="Items">Items</MudButton>
+    </MudPaper>
+    <MudPaper Class="">
+        <MudButton Variant="Variant.Outlined" @onclick="Deliveries">Deliveries</MudButton>
+    </MudPaper>
+    <MudPaper Class="">
+        <MudButton Variant="Variant.Outlined" @onclick="GreedyAlgorithm">Greedy Algorithm</MudButton>
+    </MudPaper>
+    
+</MudPaper>
+
+@code {
+
+    private void Cars()
+    {
+        NavManager.NavigateTo("/Cars");
+    }
+
+    private void Items()
+    {
+        NavManager.NavigateTo("/Items");
+    }
+
+    private void Deliveries()
+    {
+        NavManager.NavigateTo("/Deliveries");
+    }
+
+    private void GreedyAlgorithm()
+    {
+        NavManager.NavigateTo("/GreedyAlgorithmPage");
+    }
+}

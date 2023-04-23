@@ -1,0 +1,177 @@
+﻿@page "/ItemFormPage/{CreatingForm:bool}"
+@page "/ItemFormPage/{CreatingForm:bool}/{Id}"
+@using System.Net.Http.Headers
+@using OptimizationLabs.Shared.Entities
+@using UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column flex-grow-1 gap-4" Elevation="0">
+    <MudPaper Class="d-flex justify-center flex-grow-1 gap-4">
+        <MudText Typo="Typo.h6">
+            @if (!CreatingForm)
+            {
+                <p>Edit item</p>
+            }
+            else
+            {
+                <p>Create new item</p>
+            }
+        </MudText>
+    </MudPaper>
+    <MudGrid>
+        <MudItem xs="12" sm="7" Class="mx-auto pa-6">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Label="ItemName" HelperText="ItemName" Class="mt-3"
+                                  @bind-Value="_item.ItemName" For="@(() => _item.ItemName)"/>
+                    <MudTextField Label="ItemPrice" HelperText="ItemPrice" Class="mt-3"
+                                  @bind-Value="_item.ItemPrice" For="@(() => _item.ItemPrice)"/>
+                    <MudTextField Label="ItemVolume" HelperText="ItemVolume" Class="mt-3"
+                                  @bind-Value="_item.ItemVolume" For="@(() => _item.ItemVolume)"/>
+                    <MudTextField Label="ItemWeight" HelperText="ItemWeight" Class="mt-3"
+                                  @bind-Value="_item.ItemWeight" For="@(() => _item.ItemWeight)"/>
+                </MudCardContent>
+                <MudCardActions>
+                    @if (_itemErrorAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.ItemError))">
+                            Item form error
+                        </MudAlert>
+                    }
+                    @if (_itemSuccessAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Success"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.ItemSuccess))">
+                            Item form success
+                        </MudAlert>
+                    }
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               Class="ml-auto" 
+                               @onclick="itemFormSubmit">
+                        @if (!CreatingForm)
+                        {
+                            <p>Save changes</p>
+                        }
+                        else
+                        {
+                            <p>Create</p>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public bool CreatingForm { get; set; }
+
+    private Item _item = new Item();
+
+    private bool _itemErrorAlertVisible = false;
+    private bool _itemSuccessAlertVisible = false;
+
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.ItemError:
+                _itemErrorAlertVisible = false;
+                break;
+            case AlertDirection.ItemSuccess:
+                _itemSuccessAlertVisible = false;
+                break;
+        }
+    }
+
+    private async Task itemFormSubmit()
+    {
+        var item = new Item()
+        {
+            Id = _item.Id,
+            ItemPrice = _item.ItemPrice,
+            ItemVolume = _item.ItemVolume,
+            ItemWeight = _item.ItemWeight,
+            ItemName = _item.ItemName
+        };
+
+        HttpResponseMessage response = default;
+        
+        if (CreatingForm)
+        {
+            item.Id = Guid.NewGuid(); 
+            response = await Client.PostAsJsonAsync("api/Item", item);
+        }
+        else
+        {
+            response = await Client.PutAsJsonAsync($"api/Item/{item.Id}", item);
+        }
+
+
+        if (response.IsSuccessStatusCode)
+        {
+            _itemSuccessAlertVisible = true;
+            _itemErrorAlertVisible = false;
+            //NavManager.NavigateTo("/Items");
+        }
+        else
+        {
+            _itemSuccessAlertVisible = false;
+            _itemErrorAlertVisible = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CreatingForm)
+        {
+            var item = (await (await Client.GetAsync($"api/Item/{Id}"))
+                .Content.ReadFromJsonAsync<Item>());
+
+            if (item == null)
+            {
+                CreatingForm = true;
+                _item = new Item();
+            }
+            else
+            {
+                try
+                {
+                    _item = new Item()
+                    {
+                        Id = item.Id,
+                        ItemPrice = item.ItemPrice,
+                        ItemVolume = item.ItemVolume,
+                        ItemWeight = item.ItemWeight,
+                        ItemName = item.ItemName
+                    };
+                    CreatingForm = false;
+                }
+                catch (Exception e)
+                {
+                    CreatingForm = true;
+                    _item = new Item();
+                }
+            }
+        }
+        else
+        {
+            _item = new Item();
+        }
+    }
+}
