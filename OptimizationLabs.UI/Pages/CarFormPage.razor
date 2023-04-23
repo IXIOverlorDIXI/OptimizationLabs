@@ -24,6 +24,8 @@
         <MudItem xs="12" sm="7" Class="mx-auto pa-6">
             <MudCard>
                 <MudCardContent>
+                    <MudTextField Label="CarName" HelperText="CarName" Class="mt-3"
+                                                      @bind-Value="_car.CarName" For="@(() => _car.CarName)"/>
                     <MudTextField Label="DeliveryCost" HelperText="DeliveryCost" Class="mt-3"
                                   @bind-Value="_car.DeliveryCost" For="@(() => _car.DeliveryCost)"/>
                     <MudTextField Label="CarWeightLimit" HelperText="CarWeightLimit" Class="mt-3"
@@ -103,7 +105,8 @@
             Id = _car.Id,
             CarVolumeLimit = _car.CarVolumeLimit,
             CarWeightLimit = _car.CarWeightLimit,
-            DeliveryCost = _car.DeliveryCost
+            DeliveryCost = _car.DeliveryCost,
+            CarName = _car.CarName
         };
 
         HttpResponseMessage response = default;
@@ -153,7 +156,8 @@
                         Id = car.Id,
                         CarVolumeLimit = car.CarVolumeLimit,
                         CarWeightLimit = car.CarWeightLimit,
-                        DeliveryCost = car.DeliveryCost
+                        DeliveryCost = car.DeliveryCost,
+                        CarName = car.CarName
                     };
                     CreatingForm = false;
                 }

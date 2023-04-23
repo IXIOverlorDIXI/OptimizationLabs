@@ -10,6 +10,10 @@
     <MudPaper Class="">
         <MudButton Variant="Variant.Outlined" @onclick="Deliveries">Deliveries</MudButton>
     </MudPaper>
+    <MudPaper Class="">
+        <MudButton Variant="Variant.Outlined" @onclick="GreedyAlgorithm">Greedy Algorithm</MudButton>
+    </MudPaper>
+    
 </MudPaper>
 
 @code {
@@ -29,4 +33,8 @@
         NavManager.NavigateTo("/Deliveries");
     }
 
+    private void GreedyAlgorithm()
+    {
+        NavManager.NavigateTo("/GreedyAlgorithmPage");
+    }
 }

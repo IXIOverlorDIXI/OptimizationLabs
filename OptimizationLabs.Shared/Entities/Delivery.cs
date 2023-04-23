@@ -10,7 +10,6 @@ namespace OptimizationLabs.Shared.Entities
         
         public Guid ItemId { get; set; }
         
-        [JsonIgnore]
         public virtual Item? Item { get; set; }
     }
 }

@@ -24,6 +24,9 @@
                     </MudTableSortLabel>
                 </MudTh>
                 <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Item, object>(x => x.ItemName)">ItemName</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
                     <MudTableSortLabel SortBy="new Func<Item, object>(x => x.ItemPrice)">ItemPrice</MudTableSortLabel>
                 </MudTh>
                 <MudTh>
@@ -38,6 +41,7 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="ItemName">@context.ItemName</MudTd>
                 <MudTd DataLabel="ItemPrice">@context.ItemPrice</MudTd>
                 <MudTd DataLabel="ItemVolume">@context.ItemVolume</MudTd>
                 <MudTd DataLabel="ItemWeight">@context.ItemWeight</MudTd>

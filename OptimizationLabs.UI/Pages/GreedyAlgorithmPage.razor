@@ -1,0 +1,63 @@
+﻿@page "/GreedyAlgorithmPage"
+
+<NavBar/>
+
+<MudText>GreedyAlgorithmPage</MudText>
+
+<MudTable Items="@Rows" Dense="true">
+    <HeaderContent>
+        <MudTh>Column 1</MudTh>
+        <MudTh>Column 2</MudTh>
+        <MudTh>Column 3</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Column 1">@context.Column1</MudTd>
+        <MudTd DataLabel="Column 2">@context.Column2</MudTd>
+        <MudTd DataLabel="Column 3">@context.Column3</MudTd>
+    </RowTemplate>
+</MudTable>
+
+<MudButton Variant="Variant.Outlined" @onclick="RebuildTable">RebuildTable</MudButton>
+
+@code {
+    private List<TableRow> Rows { get; set; } = new List<TableRow>();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        for (int i = 1; i <= 5; i++)
+        {
+            Rows.Add(new TableRow
+            {
+                Column1 = $"Row {i} Column 1",
+                Column2 = $"Row {i} Column 2",
+                Column3 = $"Row {i} Column 3",
+            });
+        }
+    }
+
+    private void RebuildTable()
+    {
+        Rows.Clear();
+
+        for (int i = 1; i <= 10; i++)
+        {
+            Rows.Add(new TableRow
+            {
+                Column1 = $"New Row {i} Column 1",
+                Column2 = $"New Row {i} Column 2",
+                Column3 = $"New Row {i} Column 3",
+            });
+        }
+
+        StateHasChanged();
+    }
+
+    private class TableRow
+    {
+        public string Column1 { get; set; }
+        public string Column2 { get; set; }
+        public string Column3 { get; set; }
+    }
+}

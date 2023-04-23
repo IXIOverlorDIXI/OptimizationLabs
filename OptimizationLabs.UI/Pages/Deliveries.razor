@@ -26,7 +26,13 @@
                     <MudTableSortLabel SortBy="new Func<Delivery, object>(x => x.CarId)">CarId</MudTableSortLabel>
                 </MudTh>
                 <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Delivery, object>(x => x.Car.CarName)">CarName</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
                     <MudTableSortLabel SortBy="new Func<Delivery, object>(x => x.ItemId)">ItemId</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Delivery, object>(x => x.Item.ItemName)">ItemName</MudTableSortLabel>
                 </MudTh>
                 <MudTh>
                     Actions
@@ -34,8 +40,10 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Id">@context.Id</MudTd>
-                <MudTd DataLabel="CarVolumeLimit">@context.CarId</MudTd>
-                <MudTd DataLabel="CarWeightLimit">@context.ItemId</MudTd>
+                <MudTd DataLabel="CarId">@context.CarId</MudTd>
+                <MudTd DataLabel="CarName">@context.Car.CarName</MudTd>
+                <MudTd DataLabel="ItemId">@context.ItemId</MudTd>
+                <MudTd DataLabel="ItemName">@context.Item.ItemName</MudTd>
                 <MudTd DataLabel="Actions">
                     <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Error" @onclick="() => editDelivery(context.Id)">Edit</MudButton>
                     <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => deleteDelivery(context.Id)">Delete</MudButton>

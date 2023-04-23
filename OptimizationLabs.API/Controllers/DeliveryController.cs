@@ -20,13 +20,19 @@ namespace OptimizationLabs.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            return Ok(await _dataContext.Deliveries.ToListAsync());
+            return Ok(await _dataContext.Deliveries
+                .Include(x => x.Car)
+                .Include(x => x.Item)
+                .ToListAsync());
         }
         
         [HttpGet("{id}")]
         public async Task<ActionResult<Delivery>> GetDelivery(Guid id)
         {
-            var delivery = await  _dataContext.Deliveries.FindAsync(id);
+            var delivery = await  _dataContext.Deliveries
+                .Include(x => x.Car)
+                .Include(x => x.Item)
+                .FirstOrDefaultAsync(x => x.Id.Equals(id));
 
             if (delivery == null)
             {
