@@ -89,9 +89,11 @@
                     {
                         <td style="@(String.Concat( "border: 1px solid black;", 
                                        (_cells.Any(x => x.CellRowIndex == i && x.CellColumnIndex == j) 
-                                        ? _cells.Last().CellRowIndex == i && _cells.Last().CellColumnIndex == j 
-                                            ? "background-color: #3eacff;"
-                                            : "background-color: #ffe866;" 
+                                        ? _isTableBuilt 
+                                            ? "background-color: #ffe866;" 
+                                            : _cells.Last().CellRowIndex == i && _cells.Last().CellColumnIndex == j 
+                                                ? "background-color: #3eacff;" 
+                                                : "background-color: #ffe866;" 
                                         : "")))">
                             @_table[i, j]
                         </td>
@@ -130,6 +132,7 @@
     private bool _tableNextStepAlertVisible = false;
     private bool _tableSaveAlertVisible = false;
     private bool _tableErrorAlertVisible = false;
+    private bool _isTableBuilt = false;
 
     private bool[,] _relations { get; set; } = new bool[0, 0];
     
@@ -163,6 +166,7 @@
         _tableNextStepAlertVisible = false;
         _tableSaveAlertVisible = false;
         _tableErrorAlertVisible = false;
+        _isTableBuilt = false;
         
         _cells.Clear();
         _cars.Clear();
@@ -435,6 +439,8 @@
             }
         }
 
+        _isTableBuilt = isEnd;
+        
         if (!isEnd)
         {
             int row = _cars.IndexOf(
