@@ -11,6 +11,12 @@ namespace OptimizationLabs.API.Contexts
         
         public DbSet<Delivery> Deliveries { get; set; }
         
+        public DbSet<Grade> Grades { get; set; }
+        
+        public DbSet<Judge> Judges { get; set; }
+        
+        public DbSet<Candidate> Candidates { get; set; }
+        
         public DataContext(DbContextOptions<DataContext> options) 
             : base(options)
         {
@@ -35,6 +41,22 @@ namespace OptimizationLabs.API.Contexts
                 .HasForeignKey(x => x.ItemId);
             
             builder.Entity<Delivery>(delivery => delivery.HasKey(x => x.Id));
+            
+            builder.Entity<Grade>(grade => grade.HasKey(x => x.Id));
+            
+            builder.Entity<Candidate>(candidate => candidate.HasKey(x => x.Id));
+
+            builder.Entity<Candidate>()
+                .HasMany<Grade>(x => x.Grades)
+                .WithOne(x => x.Candidate)
+                .HasForeignKey(x => x.CandidateId);
+            
+            builder.Entity<Judge>(judge => judge.HasKey(x => x.Id));
+            
+            builder.Entity<Judge>()
+                .HasMany<Grade>(x => x.Grades)
+                .WithOne(x => x.Judge)
+                .HasForeignKey(x => x.JudgeId);
         }
     }
 }

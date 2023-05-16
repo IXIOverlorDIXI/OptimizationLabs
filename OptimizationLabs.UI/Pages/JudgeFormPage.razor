@@ -1,0 +1,172 @@
+﻿@page "/JudgeFormPage/{CreatingForm:bool}"
+@page "/JudgeFormPage/{CreatingForm:bool}/{Id}"
+@using OptimizationLabs.Shared.Entities
+@using UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column flex-grow-1 gap-4" Elevation="0">
+    <MudPaper Class="d-flex justify-center flex-grow-1 gap-4">
+        <MudText Typo="Typo.h6">
+            @if (!CreatingForm)
+            {
+                <p>Edit judge</p>
+            }
+            else
+            {
+                <p>Create new judge</p>
+            }
+        </MudText>
+    </MudPaper>
+    <MudGrid>
+        <MudItem xs="12" sm="7" Class="mx-auto pa-6">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Label="Full Name" HelperText="Full Name" Class="mt-3"
+                                                      @bind-Value="_judge.FullName" For="@(() => _judge.FullName)"/>
+                    <MudNumericField Label="Expert Level" HelperText="Expert Level" Min="1" Class="mt-3"
+                                  @bind-Value="_judge.ExpertLevel" For="@(() => _judge.ExpertLevel)"/>
+                </MudCardContent>
+                <MudCardActions>
+                    @if (_judgeErrorAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.JudgeError))">
+                            Judge form error
+                        </MudAlert>
+                    }
+                    @if (_judgeSuccessAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Success"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.JudgeSuccess))">
+                            Judge form success
+                        </MudAlert>
+                    }
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Class="ml-auto"
+                               @onclick="judgeFormSubmit">
+                        @if (!CreatingForm)
+                        {
+                            <p>Save changes</p>
+                        }
+                        else
+                        {
+                            <p>Create</p>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public bool CreatingForm { get; set; }
+
+    private Judge _judge = new Judge();
+
+    private bool _judgeErrorAlertVisible = false;
+    private bool _judgeSuccessAlertVisible = false;
+
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.JudgeError:
+                _judgeErrorAlertVisible = false;
+                break;
+            case AlertDirection.JudgeSuccess:
+                _judgeSuccessAlertVisible = false;
+                break;
+        }
+    }
+
+    private async Task judgeFormSubmit()
+    {
+        var judge = new Judge()
+        {
+            Id = _judge.Id,
+            FullName = _judge.FullName,
+            ExpertLevel = _judge.ExpertLevel
+        };
+
+        HttpResponseMessage response = default;
+
+        if (CreatingForm)
+        {
+            judge.Id = Guid.NewGuid();
+            response = await Client.PostAsJsonAsync("api/Judge", judge);
+        }
+        else
+        {
+            response = await Client.PutAsJsonAsync($"api/Judge/{judge.Id}", judge);
+        }
+
+
+        if (response.IsSuccessStatusCode)
+        {
+            _judgeSuccessAlertVisible = true;
+            _judgeErrorAlertVisible = false;
+            //NavManager.NavigateTo("/Judges");
+        }
+        else
+        {
+            _judgeSuccessAlertVisible = false;
+            _judgeErrorAlertVisible = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CreatingForm)
+        {
+            var judge = await (await Client.GetAsync($"api/Judge/{Id}"))
+                    .Content.ReadFromJsonAsync<Judge>();
+
+            if (judge == null)
+            {
+                CreatingForm = true;
+                _judge = new Judge
+                {
+                    ExpertLevel = 1
+                };
+            }
+            else
+            {
+                try
+                {
+                    _judge = new Judge()
+                    {
+                        Id = judge.Id,
+                        FullName = judge.FullName,
+                        ExpertLevel = judge.ExpertLevel
+                    };
+                    CreatingForm = false;
+                }
+                catch (Exception e)
+                {
+                    CreatingForm = true;
+                    _judge = new Judge();
+                }
+            }
+        }
+        else
+        {
+            _judge = new Judge();
+        }
+    }
+
+}

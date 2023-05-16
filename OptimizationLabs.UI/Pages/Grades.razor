@@ -1,0 +1,148 @@
+﻿@page "/Grades"
+
+@using OptimizationLabs.Shared.Entities
+@using OptimizationLabs.UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<NavBar/>
+<MudTabs Elevation="2" Rounded="true" PanelClass="pa-6" Centered="true">
+    <MudTabPanel Text="Grades">
+        <MudPaper Class="d-flex justify-end flex-grow-1 gap-4" Elevation="0">
+            <MudPaper Class="">
+                @* <MudButton Variant="Variant.Outlined" @onclick="gradeCreate">Create new grade</MudButton> *@
+            </MudPaper>
+            <MudPaper Class="">
+                <MudButton Variant="Variant.Outlined" @onclick="gradeRandomCreate">Create new random grades</MudButton>
+                @if (_randomDataError)
+                {
+                    <MudAlert Severity="Severity.Error"
+                              ContentAlignment="HorizontalAlignment.Center"
+                              ShowCloseIcon="true"
+                              CloseIconClicked="(() => closeAlert(AlertDirection.GradeRandomDataError))">
+                        Random generation error
+                    </MudAlert>
+                }
+                @if (_randomDataSuccess)
+                {
+                    <MudAlert Severity="Severity.Success"
+                              ContentAlignment="HorizontalAlignment.Center"
+                              ShowCloseIcon="true"
+                              CloseIconClicked="(() => closeAlert(AlertDirection.GradeRandomDataError))">
+                        Random generation success
+                    </MudAlert>
+                }
+            </MudPaper>
+            
+        </MudPaper>
+        <MudTable Items="@_allGrades" Dense="@false" Hover="@true" Bordered="@true" Striped="@false">
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel InitialDirection="SortDirection.Ascending"
+                                       SortBy="new Func<Grade, object>(x => x.Id)">Id
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Grade, object>(x => x.Judge.FullName)">Judge</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Grade, object>(x => x.Candidate.FullName)">Candidate</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Grade, object>(x => x.GradeValue)">Grade</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    Actions
+                </MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Judge">@String.Concat(context.Judge.FullName, ", Level:", context.Judge.ExpertLevel)</MudTd>
+                <MudTd DataLabel="Candidate">@String.Concat(context.Candidate.FullName, ", Number:", context.Candidate.NumberInContest)</MudTd>
+                <MudTd DataLabel="Grade">@context.GradeValue</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Error" @onclick="() => editGrade(context.Id)">Edit</MudButton>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => deleteGrade(context.Id)">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+    private List<Grade> _allGrades;
+
+    private async Task gradeCreate()
+    {
+        NavManager.NavigateTo($"/GradeFormPage/{true}");
+    }
+
+    private bool _randomDataError = false;
+    private bool _randomDataSuccess = false;
+    
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.GradeRandomDataError:
+                _randomDataError = false;
+                break;
+            case AlertDirection.GradeRandomDataSuccess:
+                _randomDataSuccess = false;
+                break;
+        }
+    }
+
+    private async Task gradeRandomCreate()
+    {
+        var response = await Client.GetAsync($"api/Grade/randomData");
+
+        if (response.IsSuccessStatusCode)
+        {
+            _randomDataError = false;
+            _randomDataSuccess = true;
+        }
+        else
+        {
+            _randomDataError = true;
+            _randomDataSuccess = false;
+        }
+
+        _allGrades = await response.Content.ReadFromJsonAsync<List<Grade>>();
+
+        StateHasChanged();
+    }
+
+    private async Task editGrade(Guid id)
+    {
+        NavManager.NavigateTo($"/GradeFormPage/{false}/{id}");
+    }
+
+    private async Task deleteGrade(Guid id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var confirmationResult = await (await DialogService.ShowAsync<DeleteDialog>("Delete confirmation", options)).Result;
+        if (!confirmationResult.Cancelled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
+        {
+            var response = await Client.DeleteAsync($"api/Grade/{id}");
+
+            response = await Client.GetAsync("api/Grade");
+
+            _allGrades = await response.Content.ReadFromJsonAsync<List<Grade>>();
+
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Client.GetAsync("api/Grade");
+
+        _allGrades = await response.Content.ReadFromJsonAsync<List<Grade>>();
+    }
+}
