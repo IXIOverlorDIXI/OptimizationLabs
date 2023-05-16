@@ -16,8 +16,4 @@
       <ProjectReference Include="..\OptimizationLabs.Shared\OptimizationLabs.Shared.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Models\" />
-    </ItemGroup>
-
 </Project>
