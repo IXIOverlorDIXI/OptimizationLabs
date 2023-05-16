@@ -1,0 +1,85 @@
+﻿@page "/Judges"
+
+@using OptimizationLabs.Shared.Entities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<NavBar/>
+<MudTabs Elevation="2" Rounded="true" PanelClass="pa-6" Centered="true">
+    <MudTabPanel Text="Judges">
+        <MudPaper Class="d-flex justify-end flex-grow-1 gap-4" Elevation="0">
+            <MudPaper Class="">
+                <MudButton Variant="Variant.Outlined" @onclick="judgeCreate">Create new judge</MudButton>
+            </MudPaper>
+        </MudPaper>
+        <MudTable Items="@_allJudges" Dense="@false" Hover="@true" Bordered="@true" Striped="@false">
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel InitialDirection="SortDirection.Ascending"
+                                       SortBy="new Func<Judge, object>(x => x.Id)">Id
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Judge, object>(x => x.FullName)">Judge full name</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Judge, object>(x => x.ExpertLevel)">Expert level</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    Actions
+                </MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Judge Name">@context.FullName</MudTd>
+                <MudTd DataLabel="Judge Expert Level">@context.ExpertLevel</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Error" @onclick="() => editJudge(context.Id)">Edit</MudButton>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => deleteJudge(context.Id)">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+    private List<Judge> _allJudges;
+
+    private async Task judgeCreate()
+    {
+        NavManager.NavigateTo($"/JudgeFormPage/{true}");
+    }
+
+    private async Task editJudge(Guid id)
+    {
+        NavManager.NavigateTo($"/JudgeFormPage/{false}/{id}");
+    }
+
+    private async Task deleteJudge(Guid id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var confirmationResult = await (await DialogService.ShowAsync<DeleteDialog>("Delete confirmation", options)).Result;
+        if (!confirmationResult.Cancelled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
+        {
+            var response = await Client.DeleteAsync($"api/Judge/{id}");
+
+            response = await Client.GetAsync("api/Judge");
+
+            _allJudges = await response.Content.ReadFromJsonAsync<List<Judge>>();
+
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Client.GetAsync("api/Judge");
+
+        _allJudges = await response.Content.ReadFromJsonAsync<List<Judge>>();
+    }
+}

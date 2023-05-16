@@ -12,6 +12,15 @@
         TableBuild = 8,
         TableNextStep = 9,
         TableSave = 10,
-        TableError = 11
+        TableError = 11,
+        JudgeError = 12,
+        JudgeSuccess = 13,
+        GradeError = 14,
+        GradeSuccess = 15,
+        CandidateError = 16,
+        CandidateSuccess = 17,
+        GradeRandomDataError = 18,
+        GradeRandomDataSuccess = 19,
+        TableError = 20
     }
 }

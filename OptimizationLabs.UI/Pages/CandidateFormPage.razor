@@ -1,0 +1,172 @@
+﻿@page "/CandidateFormPage/{CreatingForm:bool}"
+@page "/CandidateFormPage/{CreatingForm:bool}/{Id}"
+@using OptimizationLabs.Shared.Entities
+@using UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column flex-grow-1 gap-4" Elevation="0">
+    <MudPaper Class="d-flex justify-center flex-grow-1 gap-4">
+        <MudText Typo="Typo.h6">
+            @if (!CreatingForm)
+            {
+                <p>Edit candidate</p>
+            }
+            else
+            {
+                <p>Create new candidate</p>
+            }
+        </MudText>
+    </MudPaper>
+    <MudGrid>
+        <MudItem xs="12" sm="7" Class="mx-auto pa-6">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Label="Full Name" HelperText="Full Name" Class="mt-3"
+                                                      @bind-Value="_candidate.FullName" For="@(() => _candidate.FullName)"/>
+                    <MudNumericField Label="Number In Contest" HelperText="Number In Contest" Min="1" Class="mt-3"
+                                  @bind-Value="_candidate.NumberInContest" For="@(() => _candidate.NumberInContest)"/>
+                </MudCardContent>
+                <MudCardActions>
+                    @if (_candidateErrorAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.CandidateError))">
+                            Candidate form error
+                        </MudAlert>
+                    }
+                    @if (_candidateSuccessAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Success"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.CandidateSuccess))">
+                            Candidate form success
+                        </MudAlert>
+                    }
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Class="ml-auto"
+                               @onclick="candidateFormSubmit">
+                        @if (!CreatingForm)
+                        {
+                            <p>Save changes</p>
+                        }
+                        else
+                        {
+                            <p>Create</p>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public bool CreatingForm { get; set; }
+
+    private Candidate _candidate = new Candidate();
+
+    private bool _candidateErrorAlertVisible = false;
+    private bool _candidateSuccessAlertVisible = false;
+
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.CandidateError:
+                _candidateErrorAlertVisible = false;
+                break;
+            case AlertDirection.CandidateSuccess:
+                _candidateSuccessAlertVisible = false;
+                break;
+        }
+    }
+
+    private async Task candidateFormSubmit()
+    {
+        var candidate = new Candidate()
+        {
+            Id = _candidate.Id,
+            FullName = _candidate.FullName,
+            NumberInContest = _candidate.NumberInContest
+        };
+
+        HttpResponseMessage response = default;
+
+        if (CreatingForm)
+        {
+            candidate.Id = Guid.NewGuid();
+            response = await Client.PostAsJsonAsync("api/Candidate", candidate);
+        }
+        else
+        {
+            response = await Client.PutAsJsonAsync($"api/Candidate/{candidate.Id}", candidate);
+        }
+
+
+        if (response.IsSuccessStatusCode)
+        {
+            _candidateSuccessAlertVisible = true;
+            _candidateErrorAlertVisible = false;
+            //NavManager.NavigateTo("/Candidates");
+        }
+        else
+        {
+            _candidateSuccessAlertVisible = false;
+            _candidateErrorAlertVisible = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CreatingForm)
+        {
+            var candidate = await (await Client.GetAsync($"api/Candidate/{Id}"))
+                    .Content.ReadFromJsonAsync<Candidate>();
+
+            if (candidate == null)
+            {
+                CreatingForm = true;
+                _candidate = new Candidate
+                {
+                    NumberInContest = 1
+                };
+            }
+            else
+            {
+                try
+                {
+                    _candidate = new Candidate()
+                    {
+                        Id = candidate.Id,
+                        FullName = candidate.FullName,
+                        NumberInContest = candidate.NumberInContest
+                    };
+                    CreatingForm = false;
+                }
+                catch (Exception e)
+                {
+                    CreatingForm = true;
+                    _candidate = new Candidate();
+                }
+            }
+        }
+        else
+        {
+            _candidate = new Candidate();
+        }
+    }
+
+}

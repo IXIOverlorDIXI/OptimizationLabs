@@ -1,0 +1,85 @@
+﻿@page "/Candidates"
+
+@using OptimizationLabs.Shared.Entities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+
+<NavBar/>
+<MudTabs Elevation="2" Rounded="true" PanelClass="pa-6" Centered="true">
+    <MudTabPanel Text="Candidates">
+        <MudPaper Class="d-flex justify-end flex-grow-1 gap-4" Elevation="0">
+            <MudPaper Class="">
+                <MudButton Variant="Variant.Outlined" @onclick="candidateCreate">Create new candidate</MudButton>
+            </MudPaper>
+        </MudPaper>
+        <MudTable Items="@_allCandidates" Dense="@false" Hover="@true" Bordered="@true" Striped="@false">
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel InitialDirection="SortDirection.Ascending"
+                                       SortBy="new Func<Candidate, object>(x => x.Id)">Id
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Candidate, object>(x => x.FullName)">Candidate full name</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel SortBy="new Func<Candidate, object>(x => x.NumberInContest)">Candidate number in contest</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    Actions
+                </MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Candidate Full Name">@context.FullName</MudTd>
+                <MudTd DataLabel="Candidate Number In Contest">@context.NumberInContest</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Error" @onclick="() => editCandidate(context.Id)">Edit</MudButton>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => deleteCandidate(context.Id)">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+    private List<Candidate> _allCandidates;
+
+    private async Task candidateCreate()
+    {
+        NavManager.NavigateTo($"/CandidateFormPage/{true}");
+    }
+
+    private async Task editCandidate(Guid id)
+    {
+        NavManager.NavigateTo($"/CandidateFormPage/{false}/{id}");
+    }
+
+    private async Task deleteCandidate(Guid id)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var confirmationResult = await (await DialogService.ShowAsync<DeleteDialog>("Delete confirmation", options)).Result;
+        if (!confirmationResult.Cancelled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
+        {
+            var response = await Client.DeleteAsync($"api/Candidate/{id}");
+
+            response = await Client.GetAsync("api/Candidate");
+
+            _allCandidates = await response.Content.ReadFromJsonAsync<List<Candidate>>();
+
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Client.GetAsync("api/Candidate");
+
+        _allCandidates = await response.Content.ReadFromJsonAsync<List<Candidate>>();
+    }
+}

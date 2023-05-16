@@ -1,23 +1,43 @@
 ﻿@inject NavigationManager NavManager
 
-<MudPaper Class="d-flex flex-row-reverse flex-grow-1 gap-4 ma-8" Elevation="0">
-    <MudPaper Class="">
-        <MudButton Variant="Variant.Outlined" @onclick="Cars">Cars</MudButton>
-    </MudPaper>
-    <MudPaper Class="">
-        <MudButton Variant="Variant.Outlined" @onclick="Items">Items</MudButton>
-    </MudPaper>
-    <MudPaper Class="">
-        <MudButton Variant="Variant.Outlined" @onclick="Deliveries">Deliveries</MudButton>
-    </MudPaper>
-    <MudPaper Class="">
-        <MudButton Variant="Variant.Outlined" @onclick="GreedyAlgorithm">Greedy Algorithm</MudButton>
-    </MudPaper>
-    
+<MudPaper Class="d-flex flex-row-reverse flex-grow-1 gap-4 ma-8 mr-16" Elevation="0">
+    <MudMenu Label="Open lab 1-2 menu" Variant="Variant.Filled" Color="Color.Primary">
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="Cars" FullWidth="true">Cars</MudButton>
+        </MudMenuItem>
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="Items" FullWidth="true">Items</MudButton>
+        </MudMenuItem>
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="Deliveries" FullWidth="true">Deliveries</MudButton>
+        </MudMenuItem>
+        <MudMenuItem>   
+            <MudButton Variant="Variant.Outlined" @onclick="GreedyAlgorithm" FullWidth="true">Greedy Algorithm</MudButton>
+        </MudMenuItem>
+    </MudMenu>
+    <MudMenu Label="Open lab 3 menu" Variant="Variant.Filled" Color="Color.Primary">
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="Judges" FullWidth="true">Judges</MudButton>
+        </MudMenuItem>
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="Candidates" FullWidth="true">Candidates</MudButton>
+        </MudMenuItem>
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="Grades" FullWidth="true">Grades</MudButton>
+        </MudMenuItem>
+        <MudMenuItem>   
+            <MudButton Variant="Variant.Outlined" @onclick="SelectionAlgorithm" FullWidth="true">Selection Algorithm</MudButton>
+        </MudMenuItem>
+    </MudMenu>
+    <MudButton Variant="Variant.Outlined" @onclick="Home" Color="Color.Primary">Home</MudButton>
 </MudPaper>
 
 @code {
-
+    private void Home()
+    {
+        NavManager.NavigateTo("/");
+    }
+    
     private void Cars()
     {
         NavManager.NavigateTo("/Cars");
@@ -37,4 +57,25 @@
     {
         NavManager.NavigateTo("/GreedyAlgorithmPage");
     }
+
+    private void Judges()
+    {
+        NavManager.NavigateTo("/Judges");
+    }
+
+    private void Candidates()
+    {
+        NavManager.NavigateTo("/Candidates");
+    }
+
+    private void Grades()
+    {
+        NavManager.NavigateTo("/Grades");
+    }
+
+    private void SelectionAlgorithm()
+    {
+        NavManager.NavigateTo("/SelectionAlgorithmPage");
+    }
+
 }
