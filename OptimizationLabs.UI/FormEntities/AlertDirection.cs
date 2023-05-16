@@ -20,6 +20,7 @@
         CandidateError = 16,
         CandidateSuccess = 17,
         GradeRandomDataError = 18,
-        GradeRandomDataSuccess = 19
+        GradeRandomDataSuccess = 19,
+        TableError = 20
     }
 }

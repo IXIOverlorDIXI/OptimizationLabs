@@ -1,63 +1,547 @@
 ﻿@page "/GreedyAlgorithmPage"
+@using OptimizationLabs.Shared.Entities
+@using OptimizationLabs.UI.FormEntities
+@using OptimizationLabs.UI.Models
+@using System.Text
+@inject HttpClient Client
 
 <NavBar/>
 
-<MudText>GreedyAlgorithmPage</MudText>
+<MudPaper Class="gap-y-8 d-flex flex-column" Elevation="4">
+    @* <MudText Align="Align.Center" Typo="Typo.h3">GreedyAlgorithmPage</MudText> *@
+    <MudTabs Elevation="2" Rounded="true" Centered="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Full formula">
+            <MudText Align="Align.Center" Typo="Typo.h5">@Formula</MudText>
+        </MudTabPanel>
+        <MudTabPanel Text="Simplified formula">
+            <MudText Align="Align.Center" Typo="Typo.h5">@SimplifiedFormula</MudText>
+        </MudTabPanel>
+    </MudTabs>
+    
+    <MudContainer Class="d-flex justify-center mx-auto">
+        <MudButtonGroup Variant="Variant.Filled" Class="d-flex justify-center gap-4">
+            <MudButton Variant="Variant.Outlined" @onclick="ClearTable" Style="background-color: #c90076">
+                Clear Table
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" @onclick="BuildTable" Style="background-color: #8fce00">
+                Build Table
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" @onclick="NextStep" Style="background-color: #6fa8dc">
+                Next step
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" @onclick="SaveTable" Style="background-color: #ffe866">
+                Save results
+            </MudButton>
+        </MudButtonGroup>
+    </MudContainer>
+    @if (_tableClearAlertVisible)
+    {
+        <MudAlert Severity="Severity.Normal"
+                  ContentAlignment="HorizontalAlignment.Center"
+                  ShowCloseIcon="true"
+                  CloseIconClicked="(() => closeAlert(AlertDirection.TableClear))">
+            Table cleared
+        </MudAlert>
+    }
+    @if (_tableBuildAlertVisible)
+    {
+        <MudAlert Severity="Severity.Success"
+                  ContentAlignment="HorizontalAlignment.Center"
+                  ShowCloseIcon="true"
+                  CloseIconClicked="(() => closeAlert(AlertDirection.TableBuild))">
+            Table built
+        </MudAlert>
+    }
+    @if (_tableNextStepAlertVisible)
+    {
+        <MudAlert Severity="Severity.Warning"
+                  ContentAlignment="HorizontalAlignment.Center"
+                  ShowCloseIcon="true"
+                  CloseIconClicked="(() => closeAlert(AlertDirection.TableNextStep))">
+            Step number: @_step has made
+        </MudAlert>
+    }
+    @if (_tableSaveAlertVisible)
+    {
+        <MudAlert Severity="Severity.Info"
+                  ContentAlignment="HorizontalAlignment.Center"
+                  ShowCloseIcon="true"
+                  CloseIconClicked="(() => closeAlert(AlertDirection.TableSave))">
+            Saved success
+        </MudAlert>
+    }
+    @if (_tableErrorAlertVisible)
+    {
+        <MudAlert Severity="Severity.Error"
+                  ContentAlignment="HorizontalAlignment.Center"
+                  ShowCloseIcon="true"
+                  CloseIconClicked="(() => closeAlert(AlertDirection.TableError))">
+            Error
+        </MudAlert>
+    }
+    
+    <MudContainer Class="d-flex mx-auto">
+        <table>
+            @for (int i = 0; i < _table.GetLength(0); i++)
+            {
+                <tr>
+                    @for (int j = 0; j < _table.GetLength(1); j++)
+                    {
+                        <td style="@(String.Concat( "border: 1px solid black;", 
+                                       (_cells.Any(x => x.CellRowIndex == i && x.CellColumnIndex == j) 
+                                        ? _isTableBuilt 
+                                            ? "background-color: #ffe866;" 
+                                            : _cells.Last().CellRowIndex == i && _cells.Last().CellColumnIndex == j 
+                                                ? "background-color: #3eacff;" 
+                                                : "background-color: #ffe866;" 
+                                        : "")))">
+                            @_table[i, j]
+                        </td>
+                    }
+                </tr>
+            }
 
-<MudTable Items="@Rows" Dense="true">
-    <HeaderContent>
-        <MudTh>Column 1</MudTh>
-        <MudTh>Column 2</MudTh>
-        <MudTh>Column 3</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd DataLabel="Column 1">@context.Column1</MudTd>
-        <MudTd DataLabel="Column 2">@context.Column2</MudTd>
-        <MudTd DataLabel="Column 3">@context.Column3</MudTd>
-    </RowTemplate>
-</MudTable>
+        </table>
+    </MudContainer>
+</MudPaper>
 
-<MudButton Variant="Variant.Outlined" @onclick="RebuildTable">RebuildTable</MudButton>
 
 @code {
-    private List<TableRow> Rows { get; set; } = new List<TableRow>();
+    private StringBuilder Formula { get; set; } = new StringBuilder("F = 0");
+    private StringBuilder SimplifiedFormula { get; set; } = new StringBuilder("F = 0");
 
-    protected override void OnInitialized()
+    private string[,] _table { get; set; } = new string[0, 0];
+
+    private List<Pair> _cells { get; set; } = new List<Pair>();
+
+    private List<Car> _cars { get; set; } = new List<Car>();
+
+    private List<Item> _items { get; set; } = new List<Item>();
+    
+    private List<Car> _localCars { get; set; } = new List<Car>();
+    
+    private List<Item> _localItems { get; set; } = new List<Item>();
+
+    private List<Delivery> _results { get; set; } = new List<Delivery>();
+    
+    private List<Car> _localUsedCars { get; set; } = new List<Car>();
+    
+    private int _step = 0;
+    private bool _tableClearAlertVisible = false;
+    private bool _tableBuildAlertVisible = false;
+    private bool _tableNextStepAlertVisible = false;
+    private bool _tableSaveAlertVisible = false;
+    private bool _tableErrorAlertVisible = false;
+    private bool _isTableBuilt = false;
+
+    private bool[,] _relations { get; set; } = new bool[0, 0];
+    
+    private async Task closeAlert(AlertDirection alertDirection)
     {
-        base.OnInitialized();
-
-        for (int i = 1; i <= 5; i++)
+        switch (alertDirection)
         {
-            Rows.Add(new TableRow
+            case AlertDirection.TableClear:
+                _tableClearAlertVisible = false;
+                break;
+            case AlertDirection.TableBuild:
+                _tableBuildAlertVisible = false;
+                break;
+            case AlertDirection.TableNextStep:
+                _tableNextStepAlertVisible = false;
+                break;
+            case AlertDirection.TableSave:
+                _tableSaveAlertVisible = false;
+                break;
+            case AlertDirection.TableError:
+                _tableErrorAlertVisible = false;
+                break;
+        }
+    }
+    
+    private async Task ResetData()
+    {
+        _step = 0;
+        _tableClearAlertVisible = false;
+        _tableBuildAlertVisible = false;
+        _tableNextStepAlertVisible = false;
+        _tableSaveAlertVisible = false;
+        _tableErrorAlertVisible = false;
+        _isTableBuilt = false;
+        
+        _cells.Clear();
+        _cars.Clear();
+        _items.Clear();
+        _results.Clear();
+        _localUsedCars.Clear();
+        _localCars.Clear();
+        _localItems.Clear();
+        
+        Formula = new StringBuilder("F = 0");
+        SimplifiedFormula = new StringBuilder("F = 0");
+        
+        var response = await Client.GetAsync("api/Car");
+
+        _cars = (await response.Content.ReadFromJsonAsync<List<Car>>())
+            //.OrderBy(x => x.DeliveryCost)
+            .ToList();
+
+        response = await Client.GetAsync("api/Item");
+        _items = (await response.Content.ReadFromJsonAsync<List<Item>>())
+            //.OrderByDescending(x => x.ItemPrice)
+            .ToList();
+
+        _localCars = new List<Car>();
+        var localCars = new List<Car>(_cars
+            .OrderBy(x => x.DeliveryCost)
+            .ThenByDescending(x => x.CarVolumeLimit)
+            .ThenByDescending(x => x.CarWeightLimit)
+            .ToList());
+        foreach (var car in localCars)
+        {
+            _localCars.Add(new Car
             {
-                Column1 = $"Row {i} Column 1",
-                Column2 = $"Row {i} Column 2",
-                Column3 = $"Row {i} Column 3",
+                CarVolumeLimit = car.CarVolumeLimit,
+                CarWeightLimit = car.CarWeightLimit,
+                DeliveryCost = car.DeliveryCost,
+                Id = car.Id
             });
+        }
+        
+        
+        _localItems = new List<Item>(_items
+            .OrderByDescending(x => x.ItemPrice)
+            .ThenBy(x => x.ItemVolume)
+            .ThenBy(x => x.ItemWeight)
+            .ToList());
+        
+        _table = new string[_cars.Count() + 2, _items.Count() + 2];
+        _relations = new bool[_cars.Count(), _items.Count()];
+    }
+    
+    private async Task TableFill()
+    {
+        for (int i = 0; i < _table.GetLength(0); i++)
+        {
+            for (int j = 0; j < _table.GetLength(1); j++)
+            {
+                _table[i, j] = "";
+            }
+        }
+
+        _table[0, 0] = "Cars \\ Items";
+        
+        for (var i = 1; i < _cars.Count() + 1; i++)
+        {
+            _table[i, 0] = String.Concat(
+                _cars[i - 1].CarName,
+                " (DC: ",
+                _cars[i - 1].DeliveryCost,
+                ")");
+            ;
+        }
+        _table[_cars.Count() + 1, 0] = "Обмеження за роботами";
+        
+        for (var i = 1; i < _cars.Count() + 1; i++)
+        {
+            double weightLimit = _cars[i - 1].CarWeightLimit;
+            double volumeLimit = _cars[i - 1].CarVolumeLimit;
+
+            for (int j = 0; j < _relations.GetLength(1); j++)
+            {
+                if (_relations[i - 1, j])
+                {
+                    weightLimit -= _items[j].ItemWeight;
+                    volumeLimit -= _items[j].ItemVolume;
+                }
+            }
+            
+            _table[i, _items.Count() + 1] = String.Concat(
+                "CW: ",
+                Double.Round(weightLimit,5),
+                ", CV:",
+                Double.Round(volumeLimit,5));
+        }
+
+        for (var j = 1; j < _items.Count() + 1; j++)
+        {
+            _table[0, j] = String.Concat(
+                _items[j - 1].ItemName,
+                " (IW: ",
+                _items[j - 1].ItemWeight,
+                ", IV:",
+                _items[j - 1].ItemVolume,
+                ", IP:",
+                _items[j - 1].ItemPrice,
+                ")");
+        }
+
+        _table[0, _items.Count() + 1] = "Обмеження за ресурсами";
+
+        for (var j = 1; j < _items.Count() + 1; j++)
+        {
+            int limit = 1;
+            for (int i = 0; i < _relations.GetLength(0); i++)
+            {
+                if (_relations[i, j-1])
+                {
+                    limit--;
+                }
+            }
+            _table[_cars.Count() + 1, j] = limit.ToString();
+        }
+
+        for (var i = 1; i < _cars.Count() + 1; i++)
+        {
+            for (var j = 1; j < _items.Count() + 1; j++)
+            {
+                _table[i, j] = _relations[i-1, j-1] 
+                    ? "1" 
+                    : "0";
+            }
         }
     }
 
-    private void RebuildTable()
+    private async Task FormulaUpdate()
     {
-        Rows.Clear();
+        int relationAmount = 0;
+        int simplifiedRelationAmount = 0;
+        double sum = 0;
+        var deliveryCostFormulaPart = new StringBuilder("");
+        
+        Formula = new StringBuilder("F = ");
+        SimplifiedFormula = new StringBuilder("F = ");
 
-        for (int i = 1; i <= 10; i++)
+        var itemsInUse = new List<int>();
+
+        for (int i = 0; i < _relations.GetLength(0); i++)
         {
-            Rows.Add(new TableRow
+            bool isCarUsed = false;
+            for (int j = 0; j < _relations.GetLength(1); j++)
             {
-                Column1 = $"New Row {i} Column 1",
-                Column2 = $"New Row {i} Column 2",
-                Column3 = $"New Row {i} Column 3",
+                if (!_relations[i, j])
+                {
+                    continue;
+                }
+
+                itemsInUse.Add(j);
+                isCarUsed = true;
+
+                sum += _items[j].ItemPrice;
+                    
+                
+                SimplifiedFormula.Append(String.Concat(
+                    simplifiedRelationAmount > 0 
+                        ? " + "
+                        : "", 
+                    "1*", 
+                    _items[j].ItemPrice.ToString()));
+                    
+                simplifiedRelationAmount++;
+            }
+            
+            if (isCarUsed)
+            {
+                sum -= _cars[i].DeliveryCost;
+                deliveryCostFormulaPart.Append(String.Concat(" - ", _cars[i].DeliveryCost));
+            }
+        }
+
+        for (var index = 0; index < _items.Count(); index++)
+        {
+            Formula.Append(String.Concat(
+                relationAmount > 0 
+                    ? " + "
+                    : "",
+                itemsInUse.Contains(index)
+                    ? "1*"
+                    : "0*",
+                _items[index].ItemPrice.ToString()));
+                
+            relationAmount++;
+        }
+
+        if (relationAmount == 0)
+        {
+            Formula.Append("0");
+        }
+        else
+        {
+            Formula.Append(deliveryCostFormulaPart);
+            Formula.Append(String.Concat(" = ", sum.ToString()));
+        }
+
+        if (simplifiedRelationAmount == 0)
+        {
+            SimplifiedFormula.Append("0");
+        }
+        else
+        {
+            SimplifiedFormula.Append(deliveryCostFormulaPart);
+            SimplifiedFormula.Append(String.Concat(" = ", sum.ToString()));
+        }
+    }
+
+    private async Task<bool> GreedyStep()
+    {
+        bool isEnd = true;
+        
+        int i = 0;
+        int j = 0;
+
+        for (; i < _localItems.Count(); i++)
+        {
+            for (; j < _localCars.Count(); j++)
+            {
+                if (_localCars[j].CarWeightLimit >= _localItems[i].ItemWeight
+                    && _localCars[j].CarVolumeLimit >= _localItems[i].ItemVolume)
+                {
+                    if (_localItems[i].ItemPrice == 0)
+                    {
+                        if (_localCars[j].DeliveryCost == 0 
+                            || _localUsedCars.Any(x => x.Id.Equals(_localCars[j].Id)))
+                        {
+                            if (!_localUsedCars.Any(x => x.Id.Equals(_localCars[j].Id)))
+                            {
+                                _localUsedCars.Add(new Car
+                                {
+                                    Id = _localCars[j].Id,
+                                    CarVolumeLimit = _localCars[j].CarVolumeLimit,
+                                    CarWeightLimit = _localCars[j].CarWeightLimit,
+                                    DeliveryCost = _localCars[j].DeliveryCost
+                                });
+                            }
+                            
+                            isEnd = false;
+                            _localCars[j].CarWeightLimit -= _localItems[i].ItemWeight;
+                            _localCars[j].CarVolumeLimit -= _localItems[i].ItemVolume;
+                            break;
+                        }
+                        
+                        continue;
+                    }
+                    isEnd = false;
+                    _localUsedCars.Add(new Car
+                    {
+                        Id = _localCars[j].Id,
+                        CarVolumeLimit = _localCars[j].CarVolumeLimit,
+                        CarWeightLimit = _localCars[j].CarWeightLimit,
+                        DeliveryCost = _localCars[j].DeliveryCost
+                    });
+                    _localCars[j].CarWeightLimit -= _localItems[i].ItemWeight;
+                    _localCars[j].CarVolumeLimit -= _localItems[i].ItemVolume;
+                    break;
+                }
+            }
+            
+            if (!isEnd)
+            {
+                break;
+            }
+        }
+
+        _isTableBuilt = isEnd;
+        
+        if (!isEnd)
+        {
+            int row = _cars.IndexOf(
+                _cars.First(x=>x.Id
+                        .Equals(_localCars[j].Id)));
+            int column = _items.IndexOf(_items
+                .First(x => x.Id
+                    .Equals(_localItems[i].Id)));
+            
+            _results.Add(new Delivery
+            {
+                Id = Guid.NewGuid(),
+                CarId = _localCars[j].Id,
+                ItemId = _localItems[i].Id
+            });
+            
+            _localItems.RemoveAt(i);
+            
+            _relations[row, column] = true;
+            
+            _cells.Add(new Pair
+            {
+                CellRowIndex = row + 1,
+                CellColumnIndex = column + 1
             });
         }
+        
+        return isEnd;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ResetData();
+        await TableFill();
+        await FormulaUpdate();
+    }
+
+    private async Task ClearTable()
+    {
+        await ResetData();
+        await TableFill();
+        await FormulaUpdate();
+        
+        _tableClearAlertVisible = true;
 
         StateHasChanged();
     }
 
-    private class TableRow
+    private async Task BuildTable()
     {
-        public string Column1 { get; set; }
-        public string Column2 { get; set; }
-        public string Column3 { get; set; }
+        bool check;
+        
+        do
+        {
+            check = await GreedyStep();
+        } while (!check);
+
+        _tableBuildAlertVisible = true;
+        
+        await FormulaUpdate();
+        await TableFill();
+        
+        StateHasChanged();
     }
+
+    private async Task NextStep()
+    {
+        if (await GreedyStep())
+        {
+            _tableBuildAlertVisible = true;
+        }
+        else
+        {
+            _step++;
+            _tableNextStepAlertVisible = true;
+        }
+        
+        await FormulaUpdate();
+        await TableFill();
+        
+        StateHasChanged();
+    }
+
+    private async Task SaveTable()
+    {
+        HttpResponseMessage response = default;
+        try
+        {
+            foreach (var delivery in _results)
+            {
+                response = await Client.PostAsJsonAsync("api/Delivery", delivery);
+            }
+        }
+        catch (Exception e)
+        {
+            _tableErrorAlertVisible = true;
+        }
+
+        _tableSaveAlertVisible = true;
+        
+        StateHasChanged();
+    }
+
 }
