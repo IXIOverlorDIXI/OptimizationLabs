@@ -36,13 +36,16 @@
                 <tr>
                     @for (int j = 0; j < _table.GetLength(1); j++)
                     {
-                        <td style="@String.Concat("border: 1px solid black;", _cells.FirstOrDefault(x => x.CellRowIndex == i && x.CellColumnIndex == j)?.Colour); padding: 5px; text-align: center">
+                        <td style="@String.Concat("border: 1px solid black;", 
+                                       _cells.FirstOrDefault(x => 
+                                           x.CellRowIndex == i 
+                                           && x.CellColumnIndex == j)?.Colour); 
+                                padding: 5px; text-align: center">
                             @_table[i, j]
                         </td>
                     }
                 </tr>
             }
-
         </table>
     </MudContainer>
 </MudPaper>
