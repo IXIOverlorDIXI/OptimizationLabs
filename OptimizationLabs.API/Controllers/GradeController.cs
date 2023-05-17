@@ -48,32 +48,32 @@ namespace OptimizationLabs.API.Controllers
             try
             {
                 var grades = await _dataContext.Grades.ToListAsync();
-                
+
                 _dataContext.Grades.RemoveRange(grades);
+
+                grades.Clear();
 
                 var candidates = await _dataContext.Candidates.ToListAsync();
                 var judges = await _dataContext.Judges.ToListAsync();
 
-                var random = new Random();
-                
                 foreach (var judge in judges)
                 {
                     var candidatesList = new System.Collections.Generic.List<Candidate>(candidates);
-
+                    var grade = 0;
+                    
                     while (candidatesList.Any())
                     {
-                        var index = random.Next(0, candidatesList.Count);
-                        
+                        var index = Random.Shared.Next(0, candidatesList.Count);
+
                         grades.Add(new Grade
                         {
                             CandidateId = candidatesList[index].Id,
                             JudgeId = judge.Id,
                             Id = Guid.NewGuid(),
-                            GradeValue = candidates
-                                .FindLastIndex(x => x.Id
-                                    .Equals(candidatesList[index].Id))
+                            GradeValue = grade + 1
                         });
-                        
+
+                        grade++;
                         candidatesList.RemoveAt(index);
                     }
                 }
@@ -98,6 +98,13 @@ namespace OptimizationLabs.API.Controllers
         {
             try
             {
+                if (_dataContext.Grades.Any(x =>
+                        x.JudgeId.Equals(grade.JudgeId)
+                        && x.CandidateId.Equals(grade.CandidateId)))
+                {
+                    return Forbid();
+                }
+                
                 _dataContext.Grades.Add(grade);
                 await _dataContext.SaveChangesAsync();
             }
@@ -112,6 +119,13 @@ namespace OptimizationLabs.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([Required] [FromBody] Grade grade)
         {
+            if (_dataContext.Grades.Any(x =>
+                    x.JudgeId.Equals(grade.JudgeId)
+                    && x.CandidateId.Equals(grade.CandidateId)))
+            {
+                return Forbid();
+            }
+            
             _dataContext.Entry(grade).State = EntityState.Modified;
 
             try

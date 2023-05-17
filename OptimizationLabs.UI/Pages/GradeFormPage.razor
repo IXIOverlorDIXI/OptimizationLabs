@@ -1,0 +1,221 @@
+﻿@page "/GradeFormPage/{CreatingForm:bool}"
+@page "/GradeFormPage/{CreatingForm:bool}/{Id}"
+@using OptimizationLabs.Shared.Entities
+@using UI.FormEntities
+@inject HttpClient Client
+@inject NavigationManager NavManager
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column flex-grow-1 gap-4" Elevation="0">
+    <MudPaper Class="d-flex justify-center flex-grow-1 gap-4">
+        <MudText Typo="Typo.h6">
+            @if (!CreatingForm)
+            {
+                <p>Edit grade</p>
+            }
+            else
+            {
+                <p>Create new grade</p>
+            }
+        </MudText>
+    </MudPaper>
+    <MudGrid>
+        <MudItem xs="12" sm="7" Class="mx-auto pa-6">
+            <MudCard>
+                <MudCardContent>
+                    <MudSelect @bind-Value="_grade.JudgeId" Label="Select judge" Placeholder="Please Select">
+                        @foreach (var item in _judges
+                            .Where(x => !_grades
+                                .Any(y => 
+                                    y.JudgeId.Equals(x.Id)
+                                    && _grade.CandidateId.Equals(y.CandidateId))))
+                        {
+                            <MudSelectItem Value="@item.Id">@item.FullName, Level: @item.ExpertLevel</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect @bind-Value="_grade.CandidateId" Label="Select candidate" Placeholder="Please Select">
+                        @foreach (var item in _candidates
+                            .Where(x => !_grades
+                                .Any(y =>
+                                    y.CandidateId.Equals(x.Id)
+                                        && _grade.JudgeId.Equals(y.JudgeId))))
+                        {
+                            <MudSelectItem Value="@item.Id">@item.FullName, #@item.NumberInContest</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect @bind-Value="_grade.GradeValue" Label="Select grade value" Placeholder="Please Select">
+                        @foreach (var item in _gradeValues
+                            .Where(x => !_grades
+                                .Any(y => 
+                                    y.JudgeId.Equals(_grade.JudgeId)
+                                    && y.GradeValue == x)))
+                        {
+                            <MudSelectItem Value="@item">@item</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </MudCardContent>
+                <MudCardActions>
+                    @if (_gradeErrorAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Error"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.GradeError))">
+                            Grade form error
+                        </MudAlert>
+                    }
+                    @if (_gradeSuccessAlertVisible)
+                    {
+                        <MudAlert Severity="Severity.Success"
+                                  ContentAlignment="HorizontalAlignment.Center"
+                                  ShowCloseIcon="true"
+                                  CloseIconClicked="(() => closeAlert(AlertDirection.GradeSuccess))">
+                            Grade form success
+                        </MudAlert>
+                    }
+
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Class="ml-auto"
+                               @onclick="gradeFormSubmit">
+                        @if (!CreatingForm)
+                        {
+                            <p>Save changes</p>
+                        }
+                        else
+                        {
+                            <p>Create</p>
+                        }
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public bool CreatingForm { get; set; }
+
+    private List<Grade> _grades { get; set; } = new List<Grade>();
+    private List<Judge> _judges { get; set; } = new List<Judge>();
+    private List<Candidate> _candidates { get; set; } = new List<Candidate>();
+    private List<int> _gradeValues { get; set; } = new List<int>();
+    
+
+    private Grade _grade = new Grade();
+
+    private bool _gradeErrorAlertVisible = false;
+    private bool _gradeSuccessAlertVisible = false;
+
+    private async Task closeAlert(AlertDirection alertDirection)
+    {
+        switch (alertDirection)
+        {
+            case AlertDirection.GradeError:
+                _gradeErrorAlertVisible = false;
+                break;
+            case AlertDirection.GradeSuccess:
+                _gradeSuccessAlertVisible = false;
+                break;
+        }
+    }
+
+    private async Task gradeFormSubmit()
+    {
+        var grade = new Grade()
+        {
+            Id = _grade.Id,
+            JudgeId = _grade.JudgeId,
+            CandidateId = _grade.CandidateId,
+            GradeValue = _grade.GradeValue
+        };
+
+        HttpResponseMessage response = default;
+
+        if (CreatingForm)
+        {
+            grade.Id = Guid.NewGuid();
+            response = await Client.PostAsJsonAsync("api/Grade", grade);
+        }
+        else
+        {
+            response = await Client.PutAsJsonAsync($"api/Grade/{grade.Id}", grade);
+        }
+
+
+        if (response.IsSuccessStatusCode)
+        {
+            _gradeSuccessAlertVisible = true;
+            _gradeErrorAlertVisible = false;
+            //NavManager.NavigateTo("/Grades");
+        }
+        else
+        {
+            _gradeSuccessAlertVisible = false;
+            _gradeErrorAlertVisible = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _grades = await (await Client.GetAsync($"api/Grade/"))
+            .Content.ReadFromJsonAsync<List<Grade>>();
+        
+        _candidates = await (await Client.GetAsync($"api/Candidate/"))
+            .Content.ReadFromJsonAsync<List<Candidate>>();
+        
+        _judges = await (await Client.GetAsync($"api/Judge/"))
+            .Content.ReadFromJsonAsync<List<Judge>>();
+
+        _gradeValues = new List<int>();
+        
+        for(int i = 0; i < _candidates.Count; i++)
+        {
+            _gradeValues.Add(i + 1);
+        }
+        
+        if (!CreatingForm)
+        {
+            var grade = await (await Client.GetAsync($"api/Grade/{Id}"))
+                    .Content.ReadFromJsonAsync<Grade>();
+
+            if (grade == null)
+            {
+                CreatingForm = true;
+                _grade = new Grade();
+            }
+            else
+            {
+                try
+                {
+                    _grade = new Grade()
+                    {
+                        Id = grade.Id,
+                        CandidateId = grade.CandidateId,
+                        JudgeId = grade.JudgeId,
+                        GradeValue = grade.GradeValue
+                    };
+                    CreatingForm = false;
+                }
+                catch (Exception e)
+                {
+                    CreatingForm = true;
+                    _grade = new Grade();
+                }
+            }
+        }
+        else
+        {
+            _grade = new Grade();
+        }
+    }
+}
