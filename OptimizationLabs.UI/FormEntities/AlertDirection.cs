@@ -21,6 +21,5 @@
         CandidateSuccess = 17,
         GradeRandomDataError = 18,
         GradeRandomDataSuccess = 19,
-        TableError = 20
     }
 }

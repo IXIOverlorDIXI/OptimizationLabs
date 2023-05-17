@@ -87,14 +87,15 @@
                 <tr>
                     @for (int j = 0; j < _table.GetLength(1); j++)
                     {
-                        <td style="@(String.Concat( "border: 1px solid black;", 
-                                       (_cells.Any(x => x.CellRowIndex == i && x.CellColumnIndex == j) 
-                                        ? _isTableBuilt 
-                                            ? "background-color: #ffe866;" 
-                                            : _cells.Last().CellRowIndex == i && _cells.Last().CellColumnIndex == j 
-                                                ? "background-color: #3eacff;" 
-                                                : "background-color: #ffe866;" 
-                                        : "")))">
+                        <td style="@String.Concat(
+                                       "border: 1px solid black;", 
+                                       _cells.Any(x => x.CellRowIndex == i && x.CellColumnIndex == j) 
+                                           ? _isTableBuilt 
+                                               ? "background-color: #ffe866;" 
+                                               : _cells.Last().CellRowIndex == i && _cells.Last().CellColumnIndex == j 
+                                                   ? "background-color: #3eacff;" 
+                                                   : "background-color: #ffe866;" 
+                                           : "")">
                             @_table[i, j]
                         </td>
                     }
@@ -112,7 +113,7 @@
 
     private string[,] _table { get; set; } = new string[0, 0];
 
-    private List<Pair> _cells { get; set; } = new List<Pair>();
+    private List<Cell> _cells { get; set; } = new List<Cell>();
 
     private List<Car> _cars { get; set; } = new List<Car>();
 
@@ -461,7 +462,7 @@
             
             _relations[row, column] = true;
             
-            _cells.Add(new Pair
+            _cells.Add(new Cell
             {
                 CellRowIndex = row + 1,
                 CellColumnIndex = column + 1

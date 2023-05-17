@@ -1,6 +1,197 @@
 ﻿@page "/SelectionAlgorithmPage"
 
+@using OptimizationLabs.Shared.Entities
+@using OptimizationLabs.UI.FormEntities
+@using OptimizationLabs.UI.Models
+@using System.Text
+@inject HttpClient Client
+
+<NavBar/>
+
+<MudPaper Class="gap-y-8 d-flex flex-column" Elevation="4">
+    <MudText Align="Align.Center" Typo="Typo.h3" Color="Color.Success">
+        Winners:
+    </MudText>
+    @if (_victoryCandidates.Any())
+    {
+        foreach (var candidate in _victoryCandidates)
+        {
+            <MudText Align="Align.Center" Typo="Typo.h5" Color="Color.Success">
+                Candidate number @candidate.NumberInContest, @candidate.FullName won!
+            </MudText>
+        }
+    }
+    else
+    {
+        <MudText Align="Align.Center" Typo="Typo.h5" Color="Color.Error">
+            Error, no one is winner.
+        </MudText>
+    }
+
+
+    <MudContainer Class="d-flex mx-auto">
+        <table>
+            @for (int i = 0; i < _table.GetLength(0); i++)
+            {
+                <tr>
+                    @for (int j = 0; j < _table.GetLength(1); j++)
+                    {
+                        <td style="@String.Concat("border: 1px solid black;", _cells.FirstOrDefault(x => x.CellRowIndex == i && x.CellColumnIndex == j)?.Colour); padding: 5px; text-align: center">
+                            @_table[i, j]
+                        </td>
+                    }
+                </tr>
+            }
+
+        </table>
+    </MudContainer>
+</MudPaper>
+
+
 
 @code {
+    private string[,] _table { get; set; } = new string[0, 0];
+    private List<Candidate> _victoryCandidates { get; set; } = new List<Candidate>();
+    private List<Cell> _cells { get; set; } = new List<Cell>();
+    private List<Candidate> _candidates { get; set; } = new List<Candidate>();
+    private List<Judge> _judges { get; set; } = new List<Judge>();
+    private List<Grade> _grades { get; set; } = new List<Grade>();
+
+    private async Task GetData()
+    {
+        _table = new string[0, 0];
+        _victoryCandidates = new List<Candidate>();
+        _cells = new List<Cell>();
+        _candidates = new List<Candidate>();
+        _judges  = new List<Judge>();
+        _grades = new List<Grade>();
+        
+        var response = await Client.GetAsync("api/Grade");
+        _grades = await response.Content.ReadFromJsonAsync<List<Grade>>();
+
+        response = await Client.GetAsync("api/Judge");
+        _judges = await response.Content.ReadFromJsonAsync<List<Judge>>();
+        _judges = _judges.OrderByDescending(x => x.ExpertLevel).ToList();
+        
+        response = await Client.GetAsync("api/Candidate");
+        _candidates = await response.Content.ReadFromJsonAsync<List<Candidate>>();
+        _candidates = _candidates.OrderBy(x => x.NumberInContest).ToList();
+    }
     
+    private async Task BuildTable()
+    {
+        var _table_x = _judges.Count + 3;
+        var _table_y = _candidates.Count + 2;
+        _table = new string[_table_y, _table_x];
+
+        for (int i = 0; i < _table_x - 3; i++)
+        {
+            _table[0, i + 1] = _judges[i].FullName;
+            _table[_table_y - 1, i + 1] = _judges[i].ExpertLevel.ToString();
+            _cells.Add(new Cell { CellRowIndex = 0, CellColumnIndex = i + 1, Colour = "background-color: #98FB98;" });
+        }
+        
+        for (int i = 1; i < _table_y - 1; i++)
+        {
+            _table[i, 0] = i.ToString();
+            _cells.Add(new Cell { CellRowIndex = i, CellColumnIndex = 0, Colour = "background-color: #98FB98;" });
+            _table[i, _table_x - 2] = (_table_y - 2 - i).ToString();
+        }
+        
+        for (int i = 1; i < _table_y - 1; i++)
+        {
+            _table[i, _table_x - 1] = "---";
+        }
+
+        _table[0, 0] = "Місце (Range)";
+        _table[_table_y - 1, 0] = "Ранг експерта (LRange)";
+        _table[0, _table_x - 2] = "Бали (Points)";
+        _table[0, _table_x - 1] = "Результати (Results)";
+
+        _cells.AddRange(new List<Cell>()
+        {
+            new Cell { CellRowIndex = 0, CellColumnIndex = 0, Colour = "background-color: #98FB98;" },
+            new Cell { CellRowIndex = _table_y - 1, CellColumnIndex = 0, Colour = "background-color: #98FB98;" },
+            new Cell { CellRowIndex = 0, CellColumnIndex = _table_x - 2, Colour = "background-color: #98FB98;" },
+            new Cell { CellRowIndex = 0, CellColumnIndex = _table_x - 1, Colour = "background-color: #98FB98;" },
+        });
+
+        for (int i = 0; i < _table_x - 3; i++)
+        {
+            for (int j = 0; j < _table_y - 2; j++)
+            {
+                var grade = _grades.FirstOrDefault(x =>
+                    x.JudgeId.Equals(_judges[i].Id)
+                    && x.GradeValue == j+1);
+                _table[j + 1, i + 1] = grade == null
+                    ? "---"
+                    : String.Concat(
+                        grade.Candidate.FullName,
+                        ", #",
+                        grade.Candidate.NumberInContest);
+            }
+        }
+    }
+    
+    private async Task ContestCalculation()
+    {
+        var _table_x = _judges.Count + 3;
+        var _table_y = _candidates.Count + 2;
+
+        var results = _grades
+            .GroupBy(x => x.CandidateId)
+            .Select(x => new
+            {
+                id = x.Key,
+                sum = x.Sum(y => (_candidates.Count - y.GradeValue) * y.Judge.ExpertLevel)
+            })
+            .GroupBy(x => x.sum)
+            .Select(x => new {sum = x.Key, candidates = x.ToList()})
+            .OrderByDescending(x => x.sum)
+            .ToList();
+
+        for (int i = 0; i < results.Count; i++)
+        {
+            var resultLine = new StringBuilder("");
+            foreach (var candidateSum in results[i].candidates)
+            {
+                var candidate = _candidates.FirstOrDefault(x => x.Id.Equals(candidateSum.id));
+                resultLine.Append(
+                    candidate == null
+                        ? String.Concat("id: ", candidateSum.id, ": None;")
+                        : String.Concat(candidate.FullName, " #", candidate.NumberInContest, ": ", candidateSum.sum, "; "));
+            }
+
+            _table[i + 1, _table_x - 1] = resultLine.ToString();
+        }
+
+        var winners = results.Take(1).FirstOrDefault().candidates;
+        foreach (var candidate  in winners)
+        {
+            _victoryCandidates.Add(_candidates.FirstOrDefault(x => x.Id.Equals(candidate.id)));
+        }
+        
+        foreach (var candidate in _victoryCandidates)
+        {
+            var grades = _grades
+                .Where(x => x.CandidateId.Equals(candidate.Id))
+                .ToList();
+            foreach (var grade in grades)
+            {
+                _cells.Add(new Cell
+                {
+                    CellColumnIndex = _judges.FindLastIndex(x => x.Id.Equals(grade.JudgeId)) + 1,
+                    CellRowIndex = grade.GradeValue,
+                    Colour = "background-color: #00BFFF;"
+                });
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+        await BuildTable();
+        await ContestCalculation();
+    }
 }

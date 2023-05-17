@@ -11,7 +11,7 @@
     <MudTabPanel Text="Grades">
         <MudPaper Class="d-flex justify-end flex-grow-1 gap-4" Elevation="0">
             <MudPaper Class="">
-                @* <MudButton Variant="Variant.Outlined" @onclick="gradeCreate">Create new grade</MudButton> *@
+                <MudButton Variant="Variant.Outlined" @onclick="gradeCreate">Create new grade</MudButton>
             </MudPaper>
             <MudPaper Class="">
                 <MudButton Variant="Variant.Outlined" @onclick="gradeRandomCreate">Create new random grades</MudButton>
@@ -29,7 +29,7 @@
                     <MudAlert Severity="Severity.Success"
                               ContentAlignment="HorizontalAlignment.Center"
                               ShowCloseIcon="true"
-                              CloseIconClicked="(() => closeAlert(AlertDirection.GradeRandomDataError))">
+                              CloseIconClicked="(() => closeAlert(AlertDirection.GradeRandomDataSuccess))">
                         Random generation success
                     </MudAlert>
                 }

@@ -43,6 +43,12 @@ namespace OptimizationLabs.API
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
             });
+            
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole();
+                builder.AddDebug();
+            });
         }
 
         public void Configure(IApplicationBuilder application)
