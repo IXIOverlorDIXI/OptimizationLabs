@@ -29,6 +29,11 @@
             <MudButton Variant="Variant.Outlined" @onclick="SelectionAlgorithm" FullWidth="true">Selection Algorithm</MudButton>
         </MudMenuItem>
     </MudMenu>
+        <MudMenu Label="Open lab 4 menu" Variant="Variant.Filled" Color="Color.Primary">
+            <MudMenuItem>
+                <MudButton Variant="Variant.Outlined" @onclick="Matrix" FullWidth="true">Open matrix page</MudButton>
+            </MudMenuItem>
+        </MudMenu>
     <MudButton Variant="Variant.Outlined" @onclick="Home" Color="Color.Primary">Home</MudButton>
 </MudPaper>
 
@@ -77,5 +82,9 @@
     {
         NavManager.NavigateTo("/SelectionAlgorithmPage");
     }
-
+    
+    private void Matrix()
+    {
+        NavManager.NavigateTo("/MatrixPage");
+    }
 }

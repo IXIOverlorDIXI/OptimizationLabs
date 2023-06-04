@@ -1,0 +1,510 @@
+﻿@page "/MatrixPage"
+@using OptimizationLabs.UI.Models
+
+<NavBar/>
+
+<MudPaper Class="d-flex flex-column gap-2 ma-2 pa-2" Elevation="0">
+    <MudPaper Class="d-flex flex-column gap-4" Elevation="0">
+        <MudText Typo="Typo.h3" Align="Align.Center">Modeling and solving matrix games</MudText>
+        <MudText Typo="Typo.h4" Align="Align.Start">Matrices:</MudText>
+        <MudPaper Class="d-flex flex-row flex-wrap gap-5 justify-center align-center" Elevation="0">
+            <MudPaper Elevation="0">
+                <table>
+                    @for (int i = 0; i < _userTable.GetLength(0) - 1; i++)
+                    {
+                        <tr>
+                            @for (int j = 0; j < _userTable.GetLength(1) - 1; j++)
+                            {
+                                <td style="@String.Concat("border: 1px solid black;", _userTableCells.FirstOrDefault(x => x.CellRowIndex == i && x.CellColumnIndex == j)?.Colour); 
+                                                                    padding: 5px; text-align: center">
+                                    @_userTable[i, j]
+                                </td>
+                            }
+                        </tr>
+                    }
+                </table>
+            </MudPaper>
+            <MudPaper Elevation="0">
+                <table>
+                    @for (int i = 0; i < _companyTable.GetLength(0) - 1; i++)
+                    {
+                        <tr>
+                            @for (int j = 0; j < _companyTable.GetLength(1) - 1; j++)
+                            {
+                                <td style="@String.Concat("border: 1px solid black;", _companyTableCells.FirstOrDefault(x => x.CellRowIndex == i && x.CellColumnIndex == j)?.Colour); 
+                                                                                        padding: 5px; text-align: center">
+                                    @_companyTable[i, j]
+                                </td>
+                            }
+                        </tr>
+                    }
+                </table>
+            </MudPaper>
+        </MudPaper>
+        
+        @if (!string.IsNullOrEmpty(_result))
+        {
+            <MudText Typo="Typo.h6" Align="Align.Center">@_result</MudText>
+        }
+
+        @if (!string.IsNullOrEmpty(_optimalStrategy))
+        {
+            <MudText Typo="Typo.h6" Align="Align.Center">@_optimalStrategy</MudText>
+        }
+        
+        <MudPaper Class="d-flex flex-row flex-wrap gap-2 justify-center align-center" Elevation="0">
+            <MudButton Variant="Variant.Outlined" @onclick="() => PayStrategy(true)">Pay strategy</MudButton>
+            <MudButton Variant="Variant.Outlined" @onclick="() => PayStrategy(false)">Not pay strategy</MudButton>
+            <MudButton Variant="Variant.Outlined" @onclick="SearchOptimalStrategy">Optimal strategy</MudButton>
+            <MudButton Variant="Variant.Outlined" @onclick="DefaultSettings">Default settings</MudButton>
+        </MudPaper>
+
+        <MudText Typo="Typo.h4" Align="Align.Start">Settings:</MudText>
+        <MudPaper Class="d-flex flex-column gap-1 justify-start" Elevation="0">
+            <MudText Typo="Typo.h5">User additional points for paying or not</MudText>
+            <MudPaper Class="d-flex flex-row gap-4 justify-start mx-4" Elevation="0">
+                <MudNumericField T="int" @bind-Value="@UserPayScore" Label="User score for pay"/>
+                <MudNumericField T="int" @bind-Value="@UserNotPayScore" Label="User score for not pay"/>
+            </MudPaper>
+        </MudPaper>
+        <MudPaper Class="d-flex flex-column gap-1 justify-start" Elevation="0">
+            <MudText Typo="Typo.h5">Company additional points for game release with DLC, clear release or not release</MudText>
+            <MudPaper Class="d-flex flex-row gap-4 justify-start mx-4" Elevation="0">
+                <MudNumericField T="int" @bind-Value="@GameReleaseWithDLC" Label="Game release with DLC score"/>
+                <MudNumericField T="int" @bind-Value="@GameClearRelease" Label="Game clear release score"/>
+                <MudNumericField T="int" @bind-Value="@GameNotRelease" Label="Game not release score"/>
+            </MudPaper>
+        </MudPaper>
+        <MudPaper Class="d-flex flex-column gap-1 justify-start" Elevation="0">
+            <MudText Typo="Typo.h5">Company additional points for user payment or not</MudText>
+            <MudPaper Class="d-flex flex-row gap-4 justify-start mx-4" Elevation="0">
+                <MudNumericField T="int" @bind-Value="@UserPayGameScore" Label="User pay game score"/>
+                <MudNumericField T="int" @bind-Value="@UserNotPayGameScore" Label="User not pay game score"/>
+            </MudPaper>
+        </MudPaper>
+        <MudPaper Class="d-flex flex-column gap-1 justify-start" Elevation="0">
+            <MudText Typo="Typo.h5">User additional points for game release with DLC, clear release or not release and user payed</MudText>
+            <MudPaper Class="d-flex flex-row gap-4 justify-start mx-4" Elevation="0">
+                <MudNumericField T="int" @bind-Value="@UserPayGameReleaseWithDLCScore" Label="User pay game release with DLC score"/>
+                <MudNumericField T="int" @bind-Value="@UserPayGameClearReleaseScore" Label="User pay game clear release score"/>
+                <MudNumericField T="int" @bind-Value="@UserPayGameNotReleaseScore" Label="User pay game not release score"/>
+            </MudPaper>
+        </MudPaper>
+        <MudPaper Class="d-flex flex-column gap-1 justify-start" Elevation="0">
+            <MudText Typo="Typo.h5">User additional points for game release with DLC, clear release or not release and user did not pay</MudText>
+            <MudPaper Class="d-flex flex-row gap-4 justify-start mx-4" Elevation="0">
+                <MudNumericField T="int" @bind-Value="@UserNotPayGameReleaseWithDLCScore" Label="User not pay game release with DLC score"/>
+                <MudNumericField T="int" @bind-Value="@UserNotPayGameClearReleaseScore" Label="User not pay game clear release score"/>
+                <MudNumericField T="int" @bind-Value="@UserNotPayGameNotReleaseScore" Label="User not pay game not release score"/>
+            </MudPaper>
+        </MudPaper>
+    </MudPaper>
+    
+</MudPaper>
+
+@code {
+    private int _userPayScore = -2;
+    private int _userNotPayScore = 0;
+    private int _gameReleaseWithDLC = 2;
+    private int _gameClearRelease = 0;
+    private int _gameNotRelease = -2;
+    private int _userPayGameScore = 1;
+    private int _userNotPayGameScore = 0;
+    private int _userPayGameReleaseWithDLCScore = 4;
+    private int _userPayGameClearReleaseScore = 2;
+    private int _userPayGameNotReleaseScore = 0;
+    private int _userNotPayGameReleaseWithDLCScore = 1;
+    private int _userNotPayGameClearReleaseScore = 0;
+    private int _userNotPayGameNotReleaseScore = -1;
+
+    private int UserPayScore
+    {
+        get => _userPayScore;
+        set
+        {
+            _userPayScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserNotPayScore
+    {
+        get => _userNotPayScore;
+        set
+        {
+            _userNotPayScore = value;
+            ValueChanged();
+        }
+    }
+    private int GameReleaseWithDLC
+    {
+        get => _gameReleaseWithDLC;
+        set
+        {
+            _gameReleaseWithDLC = value;
+            ValueChanged();
+        }
+    }
+    private int GameClearRelease
+    {
+        get => _gameClearRelease;
+        set
+        {
+            _gameClearRelease = value;
+            ValueChanged();
+        }
+    }
+    private int GameNotRelease
+    {
+        get => _gameNotRelease;
+        set
+        {
+            _gameNotRelease = value;
+            ValueChanged();
+        }
+    }
+    private int UserPayGameScore
+    {
+        get => _userPayGameScore;
+        set
+        {
+            _userPayGameScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserNotPayGameScore
+    {
+        get => _userNotPayGameScore;
+        set
+        {
+            _userNotPayGameScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserPayGameReleaseWithDLCScore
+    {
+        get => _userPayGameReleaseWithDLCScore;
+        set
+        {
+            _userPayGameReleaseWithDLCScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserPayGameClearReleaseScore
+    {
+        get => _userPayGameClearReleaseScore;
+        set
+        {
+            _userPayGameClearReleaseScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserPayGameNotReleaseScore
+    {
+        get => _userPayGameNotReleaseScore;
+        set
+        {
+            _userPayGameNotReleaseScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserNotPayGameReleaseWithDLCScore
+    {
+        get => _userNotPayGameReleaseWithDLCScore;
+        set
+        {
+            _userNotPayGameReleaseWithDLCScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserNotPayGameClearReleaseScore
+    {
+        get => _userNotPayGameClearReleaseScore;
+        set
+        {
+            _userNotPayGameClearReleaseScore = value;
+            ValueChanged();
+        }
+    }
+    private int UserNotPayGameNotReleaseScore
+    {
+        get => _userNotPayGameNotReleaseScore;
+        set
+        {
+            _userNotPayGameNotReleaseScore = value;
+            ValueChanged();
+        }
+    }
+
+    private readonly int[,] _userMatrix = new int[2, 3];
+    private readonly int[,] _companyMatrix = new int[2, 3];
+    private readonly string[,] _userTable = new string[4, 5];
+    private readonly string[,] _companyTable = new string[4, 5];
+    private readonly List<Cell> _userTableCells = new List<Cell>();
+    private readonly List<Cell> _companyTableCells = new List<Cell>();
+    private readonly int[] _userMinMax = new int[2];
+    private readonly int[] _userMaxMin = new int[3];
+    private readonly int[] _companyMinMax = new int[3];
+    private readonly int[] _companyMaxMin = new int[2];
+    private readonly string _strategyFormatString = "You {0} and company {1}; Your strategy result: {2} for you and {3} for company.";
+    private string _result = "";
+    private string _optimalStrategy = "";
+
+    private void DefaultSettings()
+    {
+        _userPayScore = -2;
+        _userNotPayScore = 0;
+        _gameReleaseWithDLC = 2;
+        _gameClearRelease = 0;
+        _gameNotRelease = -2;
+        _userPayGameScore = 1;
+        _userNotPayGameScore = 0;
+        _userPayGameReleaseWithDLCScore = 4;
+        _userPayGameClearReleaseScore = 2;
+        _userPayGameNotReleaseScore = 0;
+        _userNotPayGameReleaseWithDLCScore = 1;
+        _userNotPayGameClearReleaseScore = 0;
+        _userNotPayGameNotReleaseScore = -1;
+        ValueChanged();
+    }
+
+    private void PayStrategy(bool strategy)
+    {
+        _userTableCells.Clear();
+        _companyTableCells.Clear();
+        _result = "";
+        
+        var companyStrategy = Random.Shared.Next() % 3;
+        var userChoice = strategy ? "payed" : "did not pay";
+        var companyRandomChoice = "";
+        switch (companyStrategy)
+        {
+            case 0:
+                companyRandomChoice = "release his game with dlc";
+                break;
+            case 1:
+                companyRandomChoice = "release just game";
+                break;
+            case 2:
+                companyRandomChoice = "did not release his game";
+                break;
+            default:
+                companyRandomChoice = "error";
+                break;
+        }
+
+        _result = string.Format(_strategyFormatString,
+            userChoice,
+            companyRandomChoice,
+            _userMatrix[strategy ? 0 : 1, companyStrategy].ToString(),
+            _companyMatrix[strategy ? 0 : 1, companyStrategy].ToString());
+        
+        _userTableCells.Add(new Cell()
+        {
+            CellRowIndex = strategy ? 1 : 2,
+            CellColumnIndex = companyStrategy + 1,
+            Colour = ColorConstants.Yellow
+        });
+        
+        _companyTableCells.Add(new Cell()
+        {
+            CellRowIndex = strategy ? 1 : 2,
+            CellColumnIndex = companyStrategy + 1,
+            Colour = ColorConstants.Yellow
+        });
+    } 
+
+    private void SearchOptimalStrategy()
+    {
+        _userTableCells.Clear();
+        _companyTableCells.Clear();
+
+        var userOptimalMinMaxIndexes = new List<int>();
+        var userOptimalMaxMinIndexes = new List<int>();
+        var companyOptimalMinMaxIndexes = new List<int>();
+        var companyOptimalMaxMinIndexes = new List<int>();
+
+        var userMinMax = _userMinMax.Max();
+        var userMaxMin = _userMaxMin.Min();
+        var companyMinMax = _companyMinMax.Max();
+        var companyMaxMin = _companyMaxMin.Min();
+
+        for (int i = 0; i < _userMinMax.Length; i++)
+        {
+            if (_userMinMax[i] == userMinMax)
+            {
+                userOptimalMinMaxIndexes.Add(i);
+            }
+        }
+        
+        for (int i = 0; i < _userMaxMin.Length; i++)
+        {
+            if (_userMaxMin[i] == userMaxMin)
+            {
+                userOptimalMaxMinIndexes.Add(i);
+            }
+        }
+        
+        for (int i = 0; i < _companyMinMax.Length; i++)
+        {
+            if (_companyMinMax[i] == companyMinMax)
+            {
+                companyOptimalMinMaxIndexes.Add(i);
+            }
+        }
+        
+        for (int i = 0; i < _companyMaxMin.Length; i++)
+        {
+            if (_companyMaxMin[i] == companyMaxMin)
+            {
+                companyOptimalMaxMinIndexes.Add(i);
+            }
+        }
+
+        _optimalStrategy = "";
+        if (userOptimalMinMaxIndexes.Contains(0))
+        {
+            _optimalStrategy += "Pay is optimal strategy; ";
+        }
+        
+        if (userOptimalMinMaxIndexes.Contains(1))
+        {
+            _optimalStrategy += "Not pay is optimal strategy; ";
+        }
+        
+        StateHasChanged();
+    }
+
+    private void CalculateUserMatrix()
+    {
+        _userMatrix[0, 0] = UserPayScore + UserPayGameReleaseWithDLCScore;
+        _userMatrix[0, 1] = UserPayScore + UserPayGameClearReleaseScore;
+        _userMatrix[0, 2] = UserPayScore + UserPayGameNotReleaseScore;
+        _userMatrix[1, 0] = UserNotPayScore + UserNotPayGameReleaseWithDLCScore;
+        _userMatrix[1, 1] = UserNotPayScore + UserNotPayGameClearReleaseScore;
+        _userMatrix[1, 2] = UserNotPayScore + UserNotPayGameNotReleaseScore;
+    }
+
+    private void CalculateCompanyMatrix()
+    {
+        _companyMatrix[0, 0] = GameReleaseWithDLC + UserPayGameScore;
+        _companyMatrix[0, 1] = GameClearRelease + UserPayGameScore;
+        _companyMatrix[0, 2] = GameNotRelease + UserPayGameScore;
+        _companyMatrix[1, 0] = GameReleaseWithDLC + UserNotPayGameScore;
+        _companyMatrix[1, 1] = GameClearRelease + UserNotPayGameScore;
+        _companyMatrix[1, 2] = GameNotRelease + UserNotPayGameScore;
+    }
+
+    private void MinMaxSearcher()
+    {
+        for (int i = 0; i < _userMatrix.GetLength(0); i++)
+        {
+            var min = int.MaxValue;
+            for (int j = 0; j < _userMatrix.GetLength(1); j++)
+            {
+                min = Int32.Min(min, _userMatrix[i, j]);
+            }
+            _userMinMax[i] = min;
+        }
+        
+        for (int i = 0; i < _userMatrix.GetLength(1); i++)
+        {
+            var max = int.MinValue;
+            for (int j = 0; j < _userMatrix.GetLength(0); j++)
+            {
+                max = Int32.Max(max, _userMatrix[j, i]);
+            }
+            _userMaxMin[i] = max;
+        }
+
+        for (int i = 0; i < _companyMatrix.GetLength(1); i++)
+        {
+            var min = int.MaxValue;
+            for (int j = 0; j < _companyMatrix.GetLength(0); j++)
+            {
+                min = Int32.Min(min, _companyMatrix[j, i]);
+            }
+            _companyMinMax[i] = min;
+        }
+        
+        for (int i = 0; i < _companyMatrix.GetLength(0); i++)
+        {
+            var max = int.MinValue;
+            for (int j = 0; j < _companyMatrix.GetLength(1); j++)
+            {
+                max = Int32.Max(max, _companyMatrix[i, j]);
+            }
+            _companyMaxMin[i] = max;
+        }
+    }
+
+    private void Visualize()
+    {
+        for (int i = 0; i < _userMatrix.GetLength(0); i++)
+        {
+            for (int j = 0; j < _userMatrix.GetLength(1); j++)
+            {
+                _userTable[i + 1, j + 1] = _userMatrix[i, j].ToString();
+            }
+        }
+
+        for (int i = 0; i < _companyMatrix.GetLength(0); i++)
+        {
+            for (int j = 0; j < _companyMatrix.GetLength(1); j++)
+            {
+                _companyTable[i + 1, j + 1] = _companyMatrix[i, j].ToString();
+            }
+        }
+
+        for (int i = 0; i < _userMinMax.Length; i++)
+        {
+            _userTable[i + 1, 4] = _userMinMax[i].ToString();
+        }
+        
+        for (int i = 0; i < _userMaxMin.Length; i++)
+        {
+            _userTable[3, i + 1] = _userMaxMin[i].ToString();
+        }
+        
+        for (int i = 0; i < _companyMinMax.Length; i++)
+        {
+            _companyTable[3, i + 1] = _companyMinMax[i].ToString();
+        }
+        
+        for (int i = 0; i < _companyMaxMin.Length; i++)
+        {
+            _companyTable[i + 1, 4] = _companyMaxMin[i].ToString();
+        }
+    }
+
+    private void ValueChanged()
+    {
+        CalculateUserMatrix();
+        CalculateCompanyMatrix();
+        MinMaxSearcher();
+        Visualize();
+        _userTableCells.Clear();
+        _companyTableCells.Clear();
+        _result = "";
+        _optimalStrategy = "";
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userTable[0, 1] = "Game release with dlc";
+        _userTable[0, 2] = "Game clear release";
+        _userTable[0, 3] = "Game does not release";
+        _userTable[1, 0] = "User pay";
+        _userTable[2, 0] = "User does not pay";
+        
+        _companyTable[0, 1] = "Game release with dlc";
+        _companyTable[0, 2] = "Game clear release";
+        _companyTable[0, 3] = "Game does not release";
+        _companyTable[1, 0] = "User pay";
+        _companyTable[2, 0] = "User does not pay";
+        
+        ValueChanged();
+    }
+
+}
