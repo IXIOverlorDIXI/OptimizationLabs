@@ -74,7 +74,7 @@
     {
         var options = new DialogOptions { CloseOnEscapeKey = true };
         var confirmationResult = await (await DialogService.ShowAsync<DeleteDialog>("Delete confirmation", options)).Result;
-        if (!confirmationResult.Cancelled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
+        if (!confirmationResult.Canceled && bool.TryParse(confirmationResult.Data.ToString(), out bool resultBool))
         {
             var response = await Client.DeleteAsync($"api/Delivery/{id}");
 

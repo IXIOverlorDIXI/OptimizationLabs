@@ -80,6 +80,16 @@
         </MudAlert>
     }
     
+    @if (_tableBuildingTime)
+    {
+        <MudAlert Severity="Severity.Info"
+                  ContentAlignment="HorizontalAlignment.Center"
+                  ShowCloseIcon="true"
+                  CloseIconClicked="(() => closeAlert(AlertDirection.TableError))">
+            @TableBuildingTimeText @_time
+        </MudAlert>
+    }
+    
     <MudContainer Class="d-flex mx-auto">
         <table>
             @for (int i = 0; i < _table.GetLength(0); i++)
@@ -110,6 +120,8 @@
 @code {
     private StringBuilder Formula { get; set; } = new StringBuilder("F = 0");
     private StringBuilder SimplifiedFormula { get; set; } = new StringBuilder("F = 0");
+    private readonly string TableBuildingTimeText = "Time: ";
+    private double _time = 0;
 
     private string[,] _table { get; set; } = new string[0, 0];
 
@@ -134,6 +146,7 @@
     private bool _tableSaveAlertVisible = false;
     private bool _tableErrorAlertVisible = false;
     private bool _isTableBuilt = false;
+    private bool _tableBuildingTime = false;
 
     private bool[,] _relations { get; set; } = new bool[0, 0];
     
@@ -167,6 +180,7 @@
         _tableNextStepAlertVisible = false;
         _tableSaveAlertVisible = false;
         _tableErrorAlertVisible = false;
+        _tableBuildingTime = false;
         _isTableBuilt = false;
         
         _cells.Clear();
@@ -389,9 +403,9 @@
         int i = 0;
         int j = 0;
 
-        for (; i < _localItems.Count(); i++)
+        for (i = 0; i < _localItems.Count(); i++)
         {
-            for (; j < _localCars.Count(); j++)
+            for (j = 0; j < _localCars.Count(); j++)
             {
                 if (_localCars[j].CarWeightLimit >= _localItems[i].ItemWeight
                     && _localCars[j].CarVolumeLimit >= _localItems[i].ItemVolume)
@@ -493,13 +507,19 @@
     private async Task BuildTable()
     {
         bool check;
-        
+        DateTime start = DateTime.Now;
         do
         {
             check = await GreedyStep();
         } while (!check);
 
+        DateTime end = DateTime.Now;
+        
         _tableBuildAlertVisible = true;
+
+        double substraction = end.Subtract(start).Milliseconds;
+        _time = substraction;
+        _tableBuildingTime = true;
         
         await FormulaUpdate();
         await TableFill();

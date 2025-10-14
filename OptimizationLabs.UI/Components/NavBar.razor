@@ -11,38 +11,41 @@
         <MudMenuItem>
             <MudButton Variant="Variant.Outlined" @onclick="Deliveries" FullWidth="true">Deliveries</MudButton>
         </MudMenuItem>
-        <MudMenuItem>   
-            <MudButton Variant="Variant.Outlined" @onclick="GreedyAlgorithm" FullWidth="true">Greedy Algorithm</MudButton>
+        <MudMenuItem>
+            <MudButton Variant="Variant.Outlined" @onclick="GreedyAlgorithm" FullWidth="true">Greedy Algorithm
+            </MudButton>
         </MudMenuItem>
     </MudMenu>
-    <MudMenu Label="Open lab 3 menu" Variant="Variant.Filled" Color="Color.Primary">
-        <MudMenuItem>
-            <MudButton Variant="Variant.Outlined" @onclick="Judges" FullWidth="true">Judges</MudButton>
-        </MudMenuItem>
-        <MudMenuItem>
-            <MudButton Variant="Variant.Outlined" @onclick="Candidates" FullWidth="true">Candidates</MudButton>
-        </MudMenuItem>
-        <MudMenuItem>
-            <MudButton Variant="Variant.Outlined" @onclick="Grades" FullWidth="true">Grades</MudButton>
-        </MudMenuItem>
-        <MudMenuItem>   
-            <MudButton Variant="Variant.Outlined" @onclick="SelectionAlgorithm" FullWidth="true">Selection Algorithm</MudButton>
-        </MudMenuItem>
-    </MudMenu>
-        <MudMenu Label="Open lab 4 menu" Variant="Variant.Filled" Color="Color.Primary">
-            <MudMenuItem>
-                <MudButton Variant="Variant.Outlined" @onclick="Matrix" FullWidth="true">Open matrix page</MudButton>
-            </MudMenuItem>
-        </MudMenu>
+    @* <MudMenu Label="Open lab 3 menu" Variant="Variant.Filled" Color="Color.Primary"> *@
+    @*     <MudMenuItem> *@
+    @*         <MudButton Variant="Variant.Outlined" @onclick="Judges" FullWidth="true">Judges</MudButton> *@
+    @*     </MudMenuItem> *@
+    @*     <MudMenuItem> *@
+    @*         <MudButton Variant="Variant.Outlined" @onclick="Candidates" FullWidth="true">Candidates</MudButton> *@
+    @*     </MudMenuItem> *@
+    @*     <MudMenuItem> *@
+    @*         <MudButton Variant="Variant.Outlined" @onclick="Grades" FullWidth="true">Grades</MudButton> *@
+    @*     </MudMenuItem> *@
+    @*     <MudMenuItem> *@
+    @*         <MudButton Variant="Variant.Outlined" @onclick="SelectionAlgorithm" FullWidth="true">Selection Algorithm *@
+    @*         </MudButton> *@
+    @*     </MudMenuItem> *@
+    @* </MudMenu> *@
+    @* <MudMenu Label="Open lab 4 menu" Variant="Variant.Filled" Color="Color.Primary"> *@
+    @*     <MudMenuItem> *@
+    @*         <MudButton Variant="Variant.Outlined" @onclick="Matrix" FullWidth="true">Open matrix page</MudButton> *@
+    @*     </MudMenuItem> *@
+    @* </MudMenu> *@
     <MudButton Variant="Variant.Outlined" @onclick="Home" Color="Color.Primary">Home</MudButton>
 </MudPaper>
 
 @code {
+
     private void Home()
     {
         NavManager.NavigateTo("/");
     }
-    
+
     private void Cars()
     {
         NavManager.NavigateTo("/Cars");
@@ -82,9 +85,10 @@
     {
         NavManager.NavigateTo("/SelectionAlgorithmPage");
     }
-    
+
     private void Matrix()
     {
         NavManager.NavigateTo("/MatrixPage");
     }
+
 }
